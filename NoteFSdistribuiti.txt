@@ -1,0 +1,21 @@
+Cosa vorremmo da un FS distribuito
+
+- semplicita' di config  (ad es. syncthing che pero' ha prob interfaccia web aperta)
+
+- mirroring/replication ad libitum, alla tahoe o giu' di li'
+
+- no single point of failure
+
+- object (file/dir/etc) location tracking
+
+- evitare db classici, se possibile
+
+- object storage su fs standard (alla dropbox)
+
+- disconnected mode!!!
+
+- COMMAND LINE TOOLS!!!
+
+- encryption, per poter usare macchine non trusted
+
+- special remotes (Gdrive, SkyDrive, dropbox, github, Amazon S3, OpenStack, WebDAV, Hubic, etc.)
