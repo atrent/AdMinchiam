@@ -1,6 +1,6 @@
 #!/bin/bash
 
-astyle *java
+astyle -A2 *java
 
 if
  javac *java
