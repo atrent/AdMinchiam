@@ -4,8 +4,10 @@ import java.awt.*;
 import java.util.*;
 
 public class GitAnnexGUI extends JFrame {
-    private File originDir;
+    private File originDir; // da "prependere" quando si esegue comando git-annex
+
     private ArrayList<AnnexedFile> annexedFiles;
+    private ArrayList<String> remotes;
 
     public GitAnnexGUI(File f) {
         super("GitAnnexGUI");
@@ -15,19 +17,29 @@ public class GitAnnexGUI extends JFrame {
         // TODO: usare JList!!!
         //add(new JList(...));
 
+        annexedFiles=new ArrayList<AnnexedFile>();
+        remotes=new ArrayList<String>();
+
         initFromAnnex(f);
     }
 
     public void initFromAnnex(File f) {
-        //TODO: check if it is a git-annex!
+        try {
+            //TODO: check if it is a git-annex!
 
-        Process process=Runtime.getRuntime().exec("git-annex list",null,f);
-        InputStream err=process.getErrorStream();
-        InputStream out=process.getInputStream();
+            Process process=Runtime.getRuntime().exec("git-annex list",null,f);
+            //InputStream stderr=process.getErrorStream();
+            BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-        while(process.isAlive()) {
-            while(err.available()>0)System.err.print((char)err.read());
-            //while(out.available()>0)System.out.print((char)out.read());
+            //while(stderr.available()>0)System.err.println(stderr.readLine());
+            String item;
+            while((item=stdout.readLine())!=null) {
+                System.out.println(item);
+                annexedFiles.add(new AnnexedFile(item));
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
         }
 
     }
@@ -56,6 +68,16 @@ public class GitAnnexGUI extends JFrame {
 
 /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
  */
-class AnnexedFile { /*extends File*/
-    private char[] remotes;
+class AnnexedFile {
+    private String nome;
+    private char[] remotes; // TODO: a parte 'X' decidere una semantica
+
+    /** si inizializza direttamente dalla stringa di git annex list
+     */
+    public AnnexedFile(String annexItem) {
+        System.err.println(annexItem);
+        String[] st=annexItem.split(" ");
+        remotes=st[0].toCharArray();
+        nome=st[1];
+    }
 }
