@@ -113,7 +113,6 @@ class AnnexedFile {
 class Remote {
     private String name;
 
-
     /** pos e' ridondante rispetto alla posizione nel vector (in GUI), attenzione!
      */
     private int pos=0; // 0=here
@@ -137,11 +136,10 @@ class Remote {
 
     public String toString() {
         StringBuilder sb=new StringBuilder();
-        sb.append(pos);
+        sb.append(new String(new char[pos+1]).replace("\0", "_")); // PADDING!!!!!!
+        sb.append(name);
         sb.append(":");
-        sb.append(String.format("%20s", name)); // PADDING!!!!!!
-        //sb.append(":");
-        //sb.append(name);
+        sb.append(pos);
         return sb.toString();
     }
 }
