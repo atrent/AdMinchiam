@@ -6,21 +6,27 @@ import java.util.*;
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
 
-    private ArrayList<AnnexedFile> annexedFiles;
-    private ArrayList<String> remotes;
+    private Vector<AnnexedFile> annexedFiles;
+    private Vector<Remote> remotes;
 
     public GitAnnexGUI(File f) {
         super("GitAnnexGUI");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
 
-        // TODO: usare JList!!!
-        //add(new JList(...));
-
-        annexedFiles=new ArrayList<AnnexedFile>();
-        remotes=new ArrayList<String>();
+        annexedFiles=new Vector<AnnexedFile>();
+        remotes=new Vector<Remote>();
 
         initFromAnnex(f);
+
+        // TODO: usare JList!!!
+        JList r=new JList(remotes);
+        r.setFont(Font.getFont(Font.MONOSPACED));
+        add(r,BorderLayout.NORTH);
+
+        JList fl=new JList(annexedFiles);
+        fl.setFont(Font.getFont(Font.MONOSPACED));
+        add(new JScrollPane(fl));
     }
 
     public void initFromAnnex(File f) {
@@ -33,11 +39,24 @@ public class GitAnnexGUI extends JFrame {
             BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
 
             //while(stderr.available()>0)System.err.println(stderr.readLine());
-            String item;
+
+            String item=stdout.readLine(); // il primo e' "here" (dovrebbe)
+            if(item==null) return; // errore, non inizializzato
+            remotes.add(new Remote(item));
+
             while((item=stdout.readLine())!=null) {
-                System.out.println(item);
-                annexedFiles.add(new AnnexedFile(item));
+                //System.out.println(item);
+                if(item.startsWith("|") && !item.endsWith("|")) {
+                    //other remotes
+                    remotes.add(new Remote(item));
+                } else {
+                    if(!item.endsWith("|")) {
+                        // annexed items
+                        annexedFiles.add(new AnnexedFile(item));
+                    }
+                }
             }
+
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -69,15 +88,60 @@ public class GitAnnexGUI extends JFrame {
 /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
  */
 class AnnexedFile {
-    private String nome;
+    private String name;
     private char[] remotes; // TODO: a parte 'X' decidere una semantica
 
     /** si inizializza direttamente dalla stringa di git annex list
      */
     public AnnexedFile(String annexItem) {
-        System.err.println(annexItem);
+        //System.err.println(annexItem);
         String[] st=annexItem.split(" ");
         remotes=st[0].toCharArray();
-        nome=st[1];
+        name=st[1];
+    }
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        sb.append(remotes);
+        sb.append(":");
+        sb.append(name);
+        return sb.toString();
+    }
+}
+
+
+class Remote {
+    private String name;
+
+
+    /** pos e' ridondante rispetto alla posizione nel vector (in GUI), attenzione!
+     */
+    private int pos=0; // 0=here
+
+    /** si inizializza direttamente dalla stringa di git annex list
+     */
+    public Remote(String annexItem) {
+        System.err.println(annexItem);
+
+        // controllo ridondante, ma non fa niente
+        if(annexItem.startsWith("|") && !annexItem.endsWith("|")) {
+            for(; annexItem.charAt(pos)=='|'; pos++);
+            name=annexItem.substring(pos);
+        } else {
+            if(!annexItem.endsWith("|")) {
+                pos=0; //here
+                name=annexItem;
+            }
+        }
+    }
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        sb.append(pos);
+        sb.append(":");
+        sb.append(String.format("%20s", name)); // PADDING!!!!!!
+        //sb.append(":");
+        //sb.append(name);
+        return sb.toString();
     }
 }
