@@ -9,31 +9,38 @@ public class GitAnnexGUI extends JFrame {
     private Vector<String> annexedFiles;
     private Vector<String> remotes;
 
-    class RemotesModel extends AbstractTableModel {
-        public String getValueAt(int r,int c) {
-            return remotes.get(r);
+    /*
+        class RemotesModel extends AbstractTableModel {
+            public String getValueAt(int r,int c) {
+                return remotes.get(r);
+            }
+            public int getColumnCount() {
+                return 1;
+            }
+            public int getRowCount() {
+                return remotes.size();
+            }
         }
-        public int getColumnCount() {
-            return 1;
-        }
-        public int getRowCount() {
-            return remotes.size();
-        }
-    }
+    */
 
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
-            if(c<getColumnCount()-1) {
+            if(c<remotes.size()) {
                 return annexedFiles.get(r).substring(c,c+1);
             } else {
-                return annexedFiles.get(r).substring(c);
+                return annexedFiles.get(r).substring(c+1);
             }
         }
         public int getColumnCount() {
-            return remotes.size();
+            return remotes.size()+1;
         }
         public int getRowCount() {
             return annexedFiles.size();
+        }
+        public String getColumnName(int column) {
+            if(column>=remotes.size())
+                return "File";
+            return remotes.get(column);
         }
     }
 
@@ -49,11 +56,19 @@ public class GitAnnexGUI extends JFrame {
 
         // TODO: usare 2 JTable!!!
 
-        JTable remotesTable=new JTable(this.new RemotesModel());
-        add(remotesTable,BorderLayout.NORTH);
+        /*
+                JTable remotesTable=new JTable(this.new RemotesModel());
+                add(remotesTable,BorderLayout.NORTH);
+        */
 
         JTable annexedFilesTable=new JTable(this.new FilesModel());
+        annexedFilesTable.setColumnSelectionAllowed(true);
         add(new JScrollPane(annexedFilesTable));
+
+        //resize columns
+        for(int i=0; i<remotes.size(); i++) {
+            annexedFilesTable.getColumnModel().getColumn(i).setMaxWidth(60);
+        }
     }
 
     public void initFromAnnex(File f) {
@@ -75,7 +90,7 @@ public class GitAnnexGUI extends JFrame {
                 //System.out.println(item);
                 if(item.startsWith("|") && !item.endsWith("|")) {
                     //other remotes
-                    remotes.add(item);
+                    remotes.add(item.replace("|", ""));
                 } else {
                     if(!item.endsWith("|")) {
                         // annexed items
