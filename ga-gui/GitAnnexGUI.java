@@ -1,13 +1,20 @@
+import javax.swing.event.*;
+import javax.swing.filechooser.*;
+import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.io.*;
-import java.awt.*;
 import java.util.*;
 
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
     private Vector<String> annexedFiles;
     private Vector<String> remotes;
+
+    // gui components
+    private JTable annexedFilesTable;
+    private JTextArea textScript;
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -52,6 +59,8 @@ public class GitAnnexGUI extends JFrame {
         annexedFiles=new Vector<String>();
         remotes=new Vector<String>();
 
+        initMenu();
+
         initFromAnnex(f);
 
         // TODO: usare 2 JTable!!!
@@ -61,14 +70,62 @@ public class GitAnnexGUI extends JFrame {
                 add(remotesTable,BorderLayout.NORTH);
         */
 
-        JTable annexedFilesTable=new JTable(this.new FilesModel());
+        annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
-        add(new JScrollPane(annexedFilesTable));
+        //add(new JScrollPane(annexedFilesTable));
 
         //resize columns
         for(int i=0; i<remotes.size(); i++) {
             annexedFilesTable.getColumnModel().getColumn(i).setMaxWidth(60);
         }
+
+        textScript=new JTextArea("Generated script");
+        //add(textScript,BorderLayout.EAST);
+
+        JSplitPane pane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(annexedFilesTable),new JScrollPane(textScript));
+        add(pane);
+        pane.setDividerLocation(700);
+    }
+
+    private void initMenu() {
+        // ///////////////////////////////////////
+        // MENU
+        JMenuBar menuBar = new JMenuBar();
+        setJMenuBar(menuBar);
+
+        // ///////
+        // // FILE
+        JMenu mnFile = new JMenu("Selections");
+        menuBar.add(mnFile);
+
+        JMenuItem mntmSalva = new JMenuItem("Generate");
+        mnFile.add(mntmSalva);
+        mntmSalva.addActionListener(new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                generate();
+            }
+        });
+
+    }
+
+    public void generate() {
+        int colCount=annexedFilesTable.getColumnCount();
+        int rowCount=annexedFilesTable.getRowCount();
+
+        StringBuilder sb=new StringBuilder();
+
+        for(int row=0; row<rowCount; row++) {
+            for(int col=0; col<colCount; col++) {
+                sb.append("r:");
+                sb.append(row);
+                sb.append(",c:");
+                sb.append(col);
+                sb.append("=");
+                sb.append(annexedFilesTable.isCellSelected(row, col));
+                sb.append("\n");
+            }
+        }
+        textScript.setText(sb.toString());
     }
 
     public void initFromAnnex(File f) {
