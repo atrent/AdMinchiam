@@ -56,6 +56,9 @@ public class GitAnnexGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
 
+
+        originDir=f;
+
         annexedFiles=new Vector<String>();
         remotes=new Vector<String>();
 
@@ -106,6 +109,56 @@ public class GitAnnexGUI extends JFrame {
             }
         });
 
+    }
+
+    /** TODO: poi cache dell'info (creare una classe Remote?)
+     * altrimenti ogni volta spawna un processo
+     */
+    public String getRemotePath(String remote) {
+
+        System.err.println(remote);
+
+        StringBuilder sb=new StringBuilder();
+        sb.append("git remote -v |grep ");
+        sb.append(remote);
+        sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
+
+        System.err.println(sb);
+
+        String[] cmd = {
+            "/bin/bash",
+            "-c",
+            sb.toString()
+            //"ls"
+        };
+
+
+        String item="errore";
+        try {
+            String line="niente";
+
+            Process process=Runtime.getRuntime().exec(cmd,null,originDir);
+
+            /*
+            BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            while ((line = stderr.readLine()) != null) {
+                System.err.println(line);
+            }
+            */
+
+            BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
+            /*
+            while ((line = stdout.readLine()) != null) {
+                System.out.println(line);
+            }
+            */
+
+            item=stdout.readLine();
+
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return item;
     }
 
     public void generate() {
@@ -168,6 +221,8 @@ public class GitAnnexGUI extends JFrame {
         } catch(Exception e) {
             e.printStackTrace();
         }
+
+        System.out.println(getRemotePath(remotes.get(1)));
 
     }
 
