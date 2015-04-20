@@ -114,15 +114,24 @@ public class GitAnnexGUI extends JFrame {
 
         StringBuilder sb=new StringBuilder();
 
+        boolean flagged=false;
         for(int row=0; row<rowCount; row++) {
             for(int col=0; col<colCount; col++) {
-                sb.append("r:");
-                sb.append(row);
-                sb.append(",c:");
-                sb.append(col);
-                sb.append("=");
-                sb.append(annexedFilesTable.isCellSelected(row, col));
+                if(annexedFilesTable.isCellSelected(row, col)) {
+                    sb.append(annexedFilesTable.getValueAt(row, col));
+                    flagged=true;
+                }
+                //sb.append("r:");
+                //sb.append(row);
+                //sb.append(",c:");
+                //sb.append(col);
+                //sb.append("=");
+                //sb.append(annexedFilesTable.isCellSelected(row, col));
+                //sb.append("\n");
+            }
+            if(flagged) {
                 sb.append("\n");
+                flagged=false;
             }
         }
         textScript.setText(sb.toString());
