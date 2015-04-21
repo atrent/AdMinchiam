@@ -105,6 +105,8 @@ public class GitAnnexGUI extends JFrame {
 
 
     /** per ora assolutamente prove di generazione
+     * 
+     * TODO: ignorare gli special remotes??? o si puo' lavorarci sopra? (si', basta fare col cp invece che get)
      */
     public void generate() {
         int colCount=annexedFilesTable.getColumnCount();
