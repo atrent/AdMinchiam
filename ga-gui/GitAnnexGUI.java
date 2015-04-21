@@ -105,10 +105,10 @@ public class GitAnnexGUI extends JFrame {
 
 
     /** per ora assolutamente prove di generazione
-     * 
+     *
      * TODO: ignorare gli special remotes??? o si puo' lavorarci sopra? (si', basta fare col cp invece che get)
      */
-    public void generate() {
+    private void generate() {
         int colCount=annexedFilesTable.getColumnCount();
         int rowCount=annexedFilesTable.getRowCount();
 
@@ -141,7 +141,7 @@ public class GitAnnexGUI extends JFrame {
         textScript.setText(sb.toString());
     }
 
-    public void initFromAnnex(File f) {
+    private void initFromAnnex(File f) {
         try {
             //TODO: check if it is a git-annex!
 
