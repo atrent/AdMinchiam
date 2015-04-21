@@ -10,7 +10,7 @@ import java.util.*;
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
     private Vector<String> annexedFiles;
-    private Vector<String> remotes;
+    private Vector<Remote> remotes;
 
     // gui components
     private JTable annexedFilesTable;
@@ -47,7 +47,7 @@ public class GitAnnexGUI extends JFrame {
         public String getColumnName(int column) {
             if(column>=remotes.size())
                 return "File";
-            return remotes.get(column);
+            return remotes.get(column).getName();
         }
     }
 
@@ -56,22 +56,14 @@ public class GitAnnexGUI extends JFrame {
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
 
-
         originDir=f;
 
         annexedFiles=new Vector<String>();
-        remotes=new Vector<String>();
+        remotes=new Vector<Remote>();
 
         initMenu();
 
         initFromAnnex(f);
-
-        // TODO: usare 2 JTable!!!
-
-        /*
-                JTable remotesTable=new JTable(this.new RemotesModel());
-                add(remotesTable,BorderLayout.NORTH);
-        */
 
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
@@ -111,56 +103,9 @@ public class GitAnnexGUI extends JFrame {
 
     }
 
-    /** TODO: poi cache dell'info (creare una classe Remote?)
-     * altrimenti ogni volta spawna un processo
+
+    /** per ora assolutamente prove di generazione
      */
-    public String getRemotePath(String remote) {
-
-        System.err.println(remote);
-
-        StringBuilder sb=new StringBuilder();
-        sb.append("git remote -v |grep ");
-        sb.append(remote);
-        sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
-
-        System.err.println(sb);
-
-        String[] cmd = {
-            "/bin/bash",
-            "-c",
-            sb.toString()
-            //"ls"
-        };
-
-
-        String item="errore";
-        try {
-            String line="niente";
-
-            Process process=Runtime.getRuntime().exec(cmd,null,originDir);
-
-            /*
-            BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            while ((line = stderr.readLine()) != null) {
-                System.err.println(line);
-            }
-            */
-
-            BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
-            /*
-            while ((line = stdout.readLine()) != null) {
-                System.out.println(line);
-            }
-            */
-
-            item=stdout.readLine();
-
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-        return item;
-    }
-
     public void generate() {
         int colCount=annexedFilesTable.getColumnCount();
         int rowCount=annexedFilesTable.getRowCount();
@@ -171,16 +116,20 @@ public class GitAnnexGUI extends JFrame {
         for(int row=0; row<rowCount; row++) {
             for(int col=0; col<colCount; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
-                    sb.append(annexedFilesTable.getValueAt(row, col));
+                    //sb.append(annexedFilesTable.getValueAt(row, col));
+                    sb.append("cd ");
+                    sb.append(remotes.get(col).getPath());
+                    sb.append("\n");
+                    sb.append("git-annex get ");
+                    sb.append(annexedFilesTable.getValueAt(row,colCount-1));
+                    sb.append("\n");
+                    //sb.append(",c:");
+                    //sb.append(col);
+                    //sb.append("=");
+                    //sb.append(annexedFilesTable.isCellSelected(row, col));
+                    sb.append("\n");
                     flagged=true;
                 }
-                //sb.append("r:");
-                //sb.append(row);
-                //sb.append(",c:");
-                //sb.append(col);
-                //sb.append("=");
-                //sb.append(annexedFilesTable.isCellSelected(row, col));
-                //sb.append("\n");
             }
             if(flagged) {
                 sb.append("\n");
@@ -203,13 +152,13 @@ public class GitAnnexGUI extends JFrame {
 
             String item=stdout.readLine(); // il primo e' "here" (dovrebbe)
             if(item==null) return; // errore, non inizializzato
-            remotes.add(item);
+            remotes.add(new Remote(item));
 
             while((item=stdout.readLine())!=null) {
                 //System.out.println(item);
                 if(item.startsWith("|") && !item.endsWith("|")) {
                     //other remotes
-                    remotes.add(item.replace("|", ""));
+                    remotes.add(new Remote(item.replace("|", "")));
                 } else {
                     if(!item.endsWith("|")) {
                         // annexed items
@@ -222,7 +171,7 @@ public class GitAnnexGUI extends JFrame {
             e.printStackTrace();
         }
 
-        System.out.println(getRemotePath(remotes.get(1)));
+        System.out.println(remotes.get(1).getPath());
 
     }
 
@@ -245,5 +194,82 @@ public class GitAnnexGUI extends JFrame {
         mainWindow.setVisible(true);
 
         //TODO: riempire da 'git-annex list'
+    }
+
+    class Remote {
+        private String name,path;
+
+        public String getName() {
+            return name;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        /** si inizializza direttamente dalla stringa di git annex list
+         */
+        public Remote(String rname) {
+            //System.err.println(rname);
+            name=rname;
+            path=getRemotePath(name);
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            //sb.append(new String(new char[pos+1]).replace("\0", "_")); // PADDING!!!!!!
+            sb.append(name);
+            sb.append(":");
+            sb.append(path);
+            return sb.toString();
+        }
+
+        public String getRemotePath(String remote) {
+            if(remote.equals("here")) return originDir.toString();
+
+            //System.err.println(remote);
+
+            StringBuilder sb=new StringBuilder();
+            sb.append("git remote -v |grep ");
+            sb.append(remote);
+            sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
+
+            //System.err.println(sb);
+
+            String[] cmd = {
+                "/bin/bash",
+                "-c",
+                sb.toString()
+                //"ls"
+            };
+
+
+            String item="errore";
+            try {
+                String line="niente";
+
+                Process process=Runtime.getRuntime().exec(cmd,null,originDir);
+
+                /*
+                BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                while ((line = stderr.readLine()) != null) {
+                    System.err.println(line);
+                }
+                */
+
+                BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
+                /*
+                while ((line = stdout.readLine()) != null) {
+                    System.out.println(line);
+                }
+                */
+
+                item=stdout.readLine();
+
+            } catch(Exception e) {
+                e.printStackTrace();
+            }
+            return item;
+        }
     }
 }
