@@ -93,16 +93,39 @@ public class GitAnnexGUI extends JFrame {
         JMenu mnFile = new JMenu("Selections");
         menuBar.add(mnFile);
 
-        JMenuItem mntmSalva = new JMenuItem("Generate");
-        mnFile.add(mntmSalva);
-        mntmSalva.addActionListener(new AbstractAction() {
+        JMenuItem mntmGen = new JMenuItem("Generate");
+        mnFile.add(mntmGen);
+        mntmGen.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 generate();
             }
         });
 
+        /*
+                JMenuItem mntmSel = new JMenuItem("prova select");
+                mnFile.add(mntmSel);
+                mntmSel.addActionListener(new AbstractAction() {
+                    public void actionPerformed(ActionEvent e) {
+                        provaSelect();
+                    }
+                });
+        */
     }
 
+    /*
+        private void provaSelect() {
+            int colCount=annexedFilesTable.getColumnCount();
+            //ListSelectionModel model = annexedFilesTable.getSelectionModel();
+            //model.clearSelection();
+            for(int col=0; col<colCount; col++) {
+                //model.addSelectionInterval(col, col);
+                annexedFilesTable.setRowSelectionInterval(col, col);
+                annexedFilesTable.addRowSelectionInterval(col, col);
+                System.out.println(col);
+            }
+            annexedFilesTable.repaint();
+        }
+    */
 
     /** per ora assolutamente prove di generazione
      *
