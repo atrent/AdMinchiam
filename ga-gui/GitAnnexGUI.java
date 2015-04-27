@@ -18,6 +18,7 @@ public class GitAnnexGUI extends JFrame {
     private JTextArea textScript;
     private JTextArea templateScript;
     private JTextField grep;
+    private JTextField matchesNum;
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -73,24 +74,37 @@ public class GitAnnexGUI extends JFrame {
 
     public GitAnnexGUI(File f) {
         super("GitAnnexGUI");
+        //
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
+        //
         originDir=f;
         annexedFiles=new AnnexedFiles();
         remotes=new Vector<Remote>();
         initMenu();
+        //
         initFromAnnex(f);
         //
+        matchesNum=new JTextField("nr. of matches");
+        matchesNum.setEditable(false);
+        //
         grep=new JTextField("grep");
-        add(grep,BorderLayout.NORTH);
+        //add(grep,BorderLayout.NORTH);
         grep.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 //System.err.println("grep changed");
                 //annexedFilesTable.repaint();
                 ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
-                System.err.println("matching: "+annexedFiles.matching());
+                //System.err.println("matching: "+annexedFiles.matching());
+                matchesNum.setText(annexedFiles.matching()+" matches");
             }
         });
+        //
+        JPanel grepArea=new JPanel();
+        grepArea.setLayout(new BorderLayout());
+        grepArea.add(grep);
+        grepArea.add(matchesNum,BorderLayout.WEST);
+        add(grepArea,BorderLayout.NORTH);
         //
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
@@ -299,16 +313,24 @@ public class GitAnnexGUI extends JFrame {
 
             String txt=grep.getText();
             int i=0;
+            boolean found=false;
 
             while(index>=0) {
                 //System.err.println("el: "+super.get(i));
                 //System.err.println("gr: "+grep.getText());
-                if(super.get(i).matches(txt)) index--;
+                if(super.get(i).matches(txt)) {
+                    index--;
+                    found=true;
+                }
 
                 i++;
+                //System.err.print("["+i+"]");
+                //System.err.print("("+index+")");
             }
 
-            return super.get(i);
+            //System.err.println();
+            if(found)return super.get(i-1);
+            else return super.get(i);
         }
 
         public int matching() {
