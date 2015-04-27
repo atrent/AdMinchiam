@@ -6,15 +6,17 @@ import javax.swing.*;
 import javax.swing.table.*;
 import java.io.*;
 import java.util.*;
+import java.text.*;
 
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
-    private Vector<String> annexedFiles;
+    private Vector<AnnexedFile> annexedFiles;
     private Vector<Remote> remotes;
 
     // gui components
     private JTable annexedFilesTable;
     private JTextArea textScript;
+    private JTextArea templateScript;
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -33,9 +35,10 @@ public class GitAnnexGUI extends JFrame {
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
             if(c<remotes.size()) {
-                return annexedFiles.get(r).substring(c,c+1);
+                return Character.toString(annexedFiles.get(r).getMask(c)); // mask
             } else {
-                return annexedFiles.get(r).substring(c+1);
+                //return annexedFiles.get(r).getFileName(); // filename
+                return annexedFiles.get(r).toString(); // filename + metadata
             }
         }
         public int getColumnCount() {
@@ -58,7 +61,7 @@ public class GitAnnexGUI extends JFrame {
 
         originDir=f;
 
-        annexedFiles=new Vector<String>();
+        annexedFiles=new Vector<AnnexedFile>();
         remotes=new Vector<Remote>();
 
         initMenu();
@@ -77,7 +80,26 @@ public class GitAnnexGUI extends JFrame {
         textScript=new JTextArea("Generated script");
         //add(textScript,BorderLayout.EAST);
 
-        JSplitPane pane=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,new JScrollPane(annexedFilesTable),new JScrollPane(textScript));
+
+        templateScript=new JTextArea("cd {0}\ngit-annex get {1}");
+        //add(templateScript,BorderLayout.EAST);
+
+        JScrollPane tbl;
+
+        JSplitPane pane=
+            new JSplitPane(
+            JSplitPane.HORIZONTAL_SPLIT,
+            tbl=new JScrollPane(annexedFilesTable),
+            new JSplitPane(
+                JSplitPane.VERTICAL_SPLIT,
+                new JScrollPane(templateScript),
+                new JScrollPane(textScript)
+            )
+        );
+
+        tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
+
+
         add(pane);
         pane.setDividerLocation(700);
     }
@@ -141,6 +163,12 @@ public class GitAnnexGUI extends JFrame {
         for(int row=0; row<rowCount; row++) {
             for(int col=0; col<colCount; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
+                    sb.append(
+                        MessageFormat.format(templateScript.getText(),
+                                             remotes.get(col).getPath(),
+                                             annexedFiles.get(row).getFileName())
+                    );
+                    /* OLD, statico
                     //sb.append(annexedFilesTable.getValueAt(row, col));
                     sb.append("cd ");
                     sb.append(remotes.get(col).getPath());
@@ -152,6 +180,7 @@ public class GitAnnexGUI extends JFrame {
                     //sb.append(col);
                     //sb.append("=");
                     //sb.append(annexedFilesTable.isCellSelected(row, col));
+                    */
                     sb.append("\n");
                     flagged=true;
                 }
@@ -165,39 +194,33 @@ public class GitAnnexGUI extends JFrame {
     }
 
     private void initFromAnnex(File f) {
-        try {
-            //TODO: check if it is a git-annex!
+        //TODO: check if it is a git-annex!
 
-            Process process=Runtime.getRuntime().exec("git-annex list",null,f);
-            //InputStream stderr=process.getErrorStream();
-            BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
-            BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
+        Command command=new Command(f,"git-annex list");
+        command.start();
 
-            //while(stderr.available()>0)System.err.println(stderr.readLine());
+        //Process process=Runtime.getRuntime().exec("git-annex list",null,f);
+        ////BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        //BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
 
-            String item=stdout.readLine(); // il primo e' "here" (dovrebbe)
-            if(item==null) return; // errore, non inizializzato
-            remotes.add(new Remote(item));
+        //while(stderr.available()>0)System.err.println(stderr.readLine());
 
-            while((item=stdout.readLine())!=null) {
-                //System.out.println(item);
-                if(item.startsWith("|") && !item.endsWith("|")) {
-                    //other remotes
-                    remotes.add(new Remote(item.replace("|", "")));
-                } else {
-                    if(!item.endsWith("|")) {
-                        // annexed items
-                        annexedFiles.add(item);
-                    }
+
+        for(String item: command.getResult()) {
+            //System.err.println(item);
+
+            if(item.equals("here")) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
+            else if(item.startsWith("|") && !item.endsWith("|")) {
+                //other remotes
+                remotes.add(new Remote(item.replace("|", "")));
+            } else {
+                if(!item.endsWith("|")) {
+                    // annexed items
+                    annexedFiles.add(new AnnexedFile(item));
                 }
             }
-
-        } catch(Exception e) {
-            e.printStackTrace();
         }
-
-        System.out.println(remotes.get(1).getPath());
-
+        //System.out.println(remotes.get(1).getPath());
     }
 
     /**
@@ -219,6 +242,69 @@ public class GitAnnexGUI extends JFrame {
         mainWindow.setVisible(true);
 
         //TODO: riempire da 'git-annex list'
+    }
+
+    /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
+     */
+    class AnnexedFile {
+        private String file;
+        private char[] remotes; // TODO: a parte 'X' decidere una semantica
+        private Hashtable<String,String> metadata;
+
+        public String getMeta(String key) {
+            if(metadata==null) initMeta();
+            return metadata.get(key);
+        }
+
+        public String getAllMeta() {
+            if(metadata==null) initMeta();
+            return metadata.toString();
+        }
+
+        /** invoke as late as possible, costly!!!
+         */
+        public void initMeta() {
+            metadata=new Hashtable<String,String>();
+            Command c=new Command(originDir,"git-annex metadata "+file);
+            c.start();
+            for(String meta: c.getResult()) {
+                //System.err.println("meta: "+meta);
+                if(meta.indexOf("=")>0) {
+                    String[] split=meta.split("=");
+                    //System.err.println(split[0]+","+split[1]);
+                    metadata.put(split[0],split[1]);
+                }
+            }
+
+        }
+
+        public String getFileName() {
+            return file;
+        }
+
+        public char getMask(int i) {
+            return remotes[i];  // TODO: check bounds!!!
+        }
+
+        /** si inizializza direttamente dalla stringa di git annex list
+         */
+        public AnnexedFile(String annexItem) {
+            //System.err.println(annexItem);
+            String[] st=annexItem.split(" ");
+            remotes=st[0].toCharArray();
+            file=st[1];
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append(remotes);
+            sb.append(":");
+            sb.append(file);
+            sb.append("[");
+            sb.append(getAllMeta());
+            sb.append("]");
+            return sb.toString();
+        }
     }
 
     class Remote {
@@ -251,6 +337,7 @@ public class GitAnnexGUI extends JFrame {
 
         public String getRemotePath(String remote) {
             if(remote.equals("here")) return originDir.toString();
+            if(remote.equals("web")) return "web";
 
             //System.err.println(remote);
 
@@ -268,33 +355,77 @@ public class GitAnnexGUI extends JFrame {
                 //"ls"
             };
 
+            Command command=new Command(originDir,cmd);
+            command.start();
 
-            String item="errore";
-            try {
-                String line="niente";
 
-                Process process=Runtime.getRuntime().exec(cmd,null,originDir);
-
-                /*
-                BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
-                while ((line = stderr.readLine()) != null) {
-                    System.err.println(line);
-                }
-                */
-
-                BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
-                /*
-                while ((line = stdout.readLine()) != null) {
-                    System.out.println(line);
-                }
-                */
-
-                item=stdout.readLine();
-
-            } catch(Exception e) {
-                e.printStackTrace();
-            }
-            return item;
+            return command.getResult().get(0);
         }
     }
+}
+
+
+
+
+class Command {
+    private File wd;
+    private String[] cmd;
+    private Vector<String> result;
+    private Vector<String> err;
+    private Process process;
+
+    public Command(File wd,String cmd) {
+        this(wd, new String[] {cmd});
+    }
+    public Command(File wd,String[] cmd) {
+        this.wd=wd;
+        this.cmd=cmd;
+        result=new Vector<String>();
+        err=new Vector<String>();
+    }
+
+    public void start() {
+        try {
+            if(cmd.length==1)
+                process=Runtime.getRuntime().exec(cmd[0],null,wd);
+            else
+                process=Runtime.getRuntime().exec(cmd,null,wd);
+
+            System.out.println("start: "+Arrays.toString(cmd));
+
+            String line="";
+
+            BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+            /*    NOTE:  one line of err message cause readline to stuck
+            while ((line = stderr.readLine()) != null) {
+                System.err.println("in err... "+line);
+                err.add(line);
+            }
+            */
+
+            System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga
+            line="";
+
+            BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
+            while ((line = stdout.readLine()) != null) {
+                //System.out.println("in out... "+line);
+                result.add(line);
+            }
+            //System.out.println("out:"+result);
+
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("end: "+Arrays.toString(cmd));
+
+    }
+
+    public Vector<String> getResult() {
+        return result;
+    }
+    public Vector<String> getErr() {
+        return err;
+    }
+
+
 }
