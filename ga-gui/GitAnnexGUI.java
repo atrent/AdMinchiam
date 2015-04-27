@@ -34,22 +34,34 @@ public class GitAnnexGUI extends JFrame {
 
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
-            if(c<remotes.size()) {
+            int size=remotes.size();
+            if(c<size) {
                 return Character.toString(annexedFiles.get(r).getMask(c)); // mask
-            } else {
-                //return annexedFiles.get(r).getFileName(); // filename
-                return annexedFiles.get(r).toString(); // filename + metadata
             }
+            if(c==size) {
+                return annexedFiles.get(r).getFileName(); // filename
+            }
+            if(c==size+1) {
+                return annexedFiles.get(r).getAllMeta(); // metadata
+            }
+            return "";
         }
+
         public int getColumnCount() {
-            return remotes.size()+1;
+            return remotes.size()+1+1; // +1 per filename, +1 per metadati
         }
+
         public int getRowCount() {
             return annexedFiles.size();
         }
+
         public String getColumnName(int column) {
-            if(column>=remotes.size())
+            if(column==remotes.size())
                 return "File";
+
+            if(column==remotes.size()+1)
+                return "Meta";
+
             return remotes.get(column).getName();
         }
     }
@@ -81,7 +93,7 @@ public class GitAnnexGUI extends JFrame {
         //add(textScript,BorderLayout.EAST);
 
 
-        templateScript=new JTextArea("cd {0}\ngit-annex get {1}");
+        templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
         //add(templateScript,BorderLayout.EAST);
 
         JScrollPane tbl;
@@ -161,7 +173,7 @@ public class GitAnnexGUI extends JFrame {
 
         boolean flagged=false;
         for(int row=0; row<rowCount; row++) {
-            for(int col=0; col<colCount; col++) {
+            for(int col=0; col<colCount-2; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
                     sb.append(
                         MessageFormat.format(templateScript.getText(),
@@ -196,6 +208,8 @@ public class GitAnnexGUI extends JFrame {
     private void initFromAnnex(File f) {
         //TODO: check if it is a git-annex!
 
+
+        // list of files
         Command command=new Command(f,"git-annex list");
         command.start();
 
@@ -204,7 +218,6 @@ public class GitAnnexGUI extends JFrame {
         //BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
 
         //while(stderr.available()>0)System.err.println(stderr.readLine());
-
 
         for(String item: command.getResult()) {
             //System.err.println(item);
@@ -221,6 +234,23 @@ public class GitAnnexGUI extends JFrame {
             }
         }
         //System.out.println(remotes.get(1).getPath());
+
+        // metadata
+        command=new Command(f,"git-annex metadata");
+        command.start();
+        StringBuffer sb=new StringBuffer();
+        int annexed=0;
+
+        for(String item: command.getResult()) {
+            //System.err.println("meta: "+item);
+            sb.append(item);
+            sb.append("\n");
+            if(item.equals("ok")) {
+                annexedFiles.get(annexed).setMeta(sb.toString());
+                sb=new StringBuffer();
+                annexed++;
+            }
+        }
     }
 
     /**
@@ -252,19 +282,53 @@ public class GitAnnexGUI extends JFrame {
         private Hashtable<String,String> metadata;
 
         public String getMeta(String key) {
-            if(metadata==null) initMeta();
+            //initMeta();
             return metadata.get(key);
         }
 
         public String getAllMeta() {
-            if(metadata==null) initMeta();
+            //initMeta();
             return metadata.toString();
         }
 
-        /** invoke as late as possible, costly!!!
+        public void clearMeta() {
+            metadata.clear();
+        }
+
+
+        /** formato:
+         * nomefile
+         * tags..
+         * tags..
+         * ok
          */
-        public void initMeta() {
-            metadata=new Hashtable<String,String>();
+        public void setMeta(String meta) {
+            //System.err.println("received meta: "+meta);
+
+            String[] lines=meta.split("\n");
+
+            if(!lines[lines.length-1].equals("ok"))
+                throw new RuntimeException("metadata record does not end in 'ok'!");
+
+            String receivedName=lines[0].substring(lines[0].indexOf(" ")+1);
+            if(receivedName.equals(getFileName()))
+                throw new RuntimeException("metadata filename does not match! "+getFileName()+" vs. "+receivedName);
+
+            for(int l=1; l<lines.length-1; l++) {
+                if(lines[l].indexOf("=")>0) {
+                    String[] split=lines[l].split("=");
+                    //System.err.println(split[0]+","+split[1]);
+                    metadata.put(split[0].trim(),split[1].trim());
+                }
+            }
+        }
+
+
+        /** invoke as late as possible, costly!!! */
+        /*
+        public void _initMeta() {
+            if(metadata.size()!=0) return;
+
             Command c=new Command(originDir,"git-annex metadata "+file);
             c.start();
             for(String meta: c.getResult()) {
@@ -277,6 +341,7 @@ public class GitAnnexGUI extends JFrame {
             }
 
         }
+        */
 
         public String getFileName() {
             return file;
@@ -293,12 +358,23 @@ public class GitAnnexGUI extends JFrame {
             String[] st=annexItem.split(" ");
             remotes=st[0].toCharArray();
             file=st[1];
+            metadata=new Hashtable<String,String>();
+
         }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
             sb.append(remotes);
             sb.append(":");
+            sb.append(file);
+            //sb.append("[");
+            sb.append(getAllMeta());
+            //sb.append("]");
+            return sb.toString();
+        }
+
+        public String nameAndMeta() {
+            StringBuilder sb=new StringBuilder();
             sb.append(file);
             sb.append("[");
             sb.append(getAllMeta());
@@ -403,7 +479,7 @@ class Command {
             }
             */
 
-            System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga
+            //System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga // TODO: perche' si blocca?!?
             line="";
 
             BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
