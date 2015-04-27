@@ -10,13 +10,14 @@ import java.text.*;
 
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
-    private Vector<AnnexedFile> annexedFiles;
+    private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
 
     // gui components
     private JTable annexedFilesTable;
     private JTextArea textScript;
     private JTextArea templateScript;
+    private JTextField grep;
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -35,15 +36,19 @@ public class GitAnnexGUI extends JFrame {
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
             int size=remotes.size();
+
             if(c<size) {
                 return Character.toString(annexedFiles.get(r).getMask(c)); // mask
             }
+
             if(c==size) {
                 return annexedFiles.get(r).getFileName(); // filename
             }
+
             if(c==size+1) {
                 return annexedFiles.get(r).getAllMeta(); // metadata
             }
+
             return "";
         }
 
@@ -52,7 +57,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public int getRowCount() {
-            return annexedFiles.size();
+            return annexedFiles.matching();
         }
 
         public String getColumnName(int column) {
@@ -70,20 +75,27 @@ public class GitAnnexGUI extends JFrame {
         super("GitAnnexGUI");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
-
         originDir=f;
-
-        annexedFiles=new Vector<AnnexedFile>();
+        annexedFiles=new AnnexedFiles();
         remotes=new Vector<Remote>();
-
         initMenu();
-
         initFromAnnex(f);
-
+        //
+        grep=new JTextField("grep");
+        add(grep,BorderLayout.NORTH);
+        grep.addActionListener(new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                //System.err.println("grep changed");
+                //annexedFilesTable.repaint();
+                ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
+                System.err.println("matching: "+annexedFiles.matching());
+            }
+        });
+        //
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
-        //add(new JScrollPane(annexedFilesTable));
 
+        //add(new JScrollPane(annexedFilesTable));
         //resize columns
         for(int i=0; i<remotes.size(); i++) {
             annexedFilesTable.getColumnModel().getColumn(i).setMaxWidth(60);
@@ -91,13 +103,9 @@ public class GitAnnexGUI extends JFrame {
 
         textScript=new JTextArea("Generated script");
         //add(textScript,BorderLayout.EAST);
-
-
         templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
         //add(templateScript,BorderLayout.EAST);
-
         JScrollPane tbl;
-
         JSplitPane pane=
             new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
@@ -108,10 +116,7 @@ public class GitAnnexGUI extends JFrame {
                 new JScrollPane(textScript)
             )
         );
-
         tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
-
-
         add(pane);
         pane.setDividerLocation(700);
     }
@@ -121,12 +126,10 @@ public class GitAnnexGUI extends JFrame {
         // MENU
         JMenuBar menuBar = new JMenuBar();
         setJMenuBar(menuBar);
-
         // ///////
         // // FILE
         JMenu mnFile = new JMenu("Selections");
         menuBar.add(mnFile);
-
         JMenuItem mntmGen = new JMenuItem("Generate");
         mnFile.add(mntmGen);
         mntmGen.addActionListener(new AbstractAction() {
@@ -134,7 +137,6 @@ public class GitAnnexGUI extends JFrame {
                 generate();
             }
         });
-
         /*
                 JMenuItem mntmSel = new JMenuItem("prova select");
                 mnFile.add(mntmSel);
@@ -164,21 +166,37 @@ public class GitAnnexGUI extends JFrame {
     /** per ora assolutamente prove di generazione
      *
      * TODO: ignorare gli special remotes??? o si puo' lavorarci sopra? (si', basta fare col cp invece che get)
+     *
+     * TODO: ora va per indice nella JTable, convertire a "chiave"
      */
     private void generate() {
         int colCount=annexedFilesTable.getColumnCount();
         int rowCount=annexedFilesTable.getRowCount();
-
         StringBuilder sb=new StringBuilder();
-
         boolean flagged=false;
+
         for(int row=0; row<rowCount; row++) {
             for(int col=0; col<colCount-2; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
+                    // prendi nome
+                    String name=annexedFilesTable.getValueAt(row, colCount-2).toString();
+                    //System.err.println("name: "+name);
+                    // prendi annexed, cerca nome in vector
+                    AnnexedFile af=null;
+                    int index=0;
+
+                    for(; index<annexedFiles.size(); index++) {
+                        af=annexedFiles.get(index);
+
+                        if(af.getFileName().equals(name)) break;
+                    }
+
+                    if(af==null) throw new RuntimeException("annexed file not found!");
+
                     sb.append(
                         MessageFormat.format(templateScript.getText(),
                                              remotes.get(col).getPath(),
-                                             annexedFiles.get(row).getFileName())
+                                             af.getFileName())
                     );
                     /* OLD, statico
                     //sb.append(annexedFilesTable.getValueAt(row, col));
@@ -197,18 +215,18 @@ public class GitAnnexGUI extends JFrame {
                     flagged=true;
                 }
             }
+
             if(flagged) {
                 sb.append("\n");
                 flagged=false;
             }
         }
+
         textScript.setText(sb.toString());
     }
 
     private void initFromAnnex(File f) {
         //TODO: check if it is a git-annex!
-
-
         // list of files
         Command command=new Command(f,"git-annex list");
         command.start();
@@ -216,12 +234,9 @@ public class GitAnnexGUI extends JFrame {
         //Process process=Runtime.getRuntime().exec("git-annex list",null,f);
         ////BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
         //BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
-
         //while(stderr.available()>0)System.err.println(stderr.readLine());
-
         for(String item: command.getResult()) {
             //System.err.println(item);
-
             if(item.equals("here")) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
             else if(item.startsWith("|") && !item.endsWith("|")) {
                 //other remotes
@@ -233,8 +248,8 @@ public class GitAnnexGUI extends JFrame {
                 }
             }
         }
-        //System.out.println(remotes.get(1).getPath());
 
+        //System.out.println(remotes.get(1).getPath());
         // metadata
         command=new Command(f,"git-annex metadata");
         command.start();
@@ -245,6 +260,7 @@ public class GitAnnexGUI extends JFrame {
             //System.err.println("meta: "+item);
             sb.append(item);
             sb.append("\n");
+
             if(item.equals("ok")) {
                 annexedFiles.get(annexed).setMeta(sb.toString());
                 sb=new StringBuffer();
@@ -263,6 +279,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         File f=new File(arg[0]);
+
         if(!f.isDirectory()) {
             System.err.println("Argument is not a dir!");
             System.exit(2);
@@ -270,9 +287,45 @@ public class GitAnnexGUI extends JFrame {
 
         GitAnnexGUI mainWindow=new GitAnnexGUI(f);
         mainWindow.setVisible(true);
-
         //TODO: riempire da 'git-annex list'
     }
+
+    class AnnexedFiles extends Vector<AnnexedFile> {
+
+        /** devo filtrare solo i matching, restituisce l'indexesimo che matcha
+         */
+        public AnnexedFile get(int index) {
+            if(grep==null) return super.get(index);
+
+            String txt=grep.getText();
+            int i=0;
+
+            while(index>=0) {
+                //System.err.println("el: "+super.get(i));
+                //System.err.println("gr: "+grep.getText());
+                if(super.get(i).matches(txt)) index--;
+
+                i++;
+            }
+
+            return super.get(i);
+        }
+
+        public int matching() {
+            return matching(grep.getText());
+        }
+
+        public int matching(String grep) {
+            int count=0;
+
+            for(AnnexedFile af: annexedFiles) {
+                if(af.matches(grep)) count++;
+            }
+
+            return count;
+        }
+    }
+
 
     /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
      */
@@ -291,8 +344,23 @@ public class GitAnnexGUI extends JFrame {
             return metadata.toString();
         }
 
+        /** pericoloso? fare anche un equals con AnnexedFile?
+         */
+        /*
+        public boolean equals(Object nome) {
+            System.out.println("equals...");
+            return file.equals(nome.toString());
+        }
+        */
+
         public void clearMeta() {
             metadata.clear();
+        }
+
+        public boolean matches(String grep) {
+            if(grep.length()==0) return true;
+
+            return toString().indexOf(grep)>0;
         }
 
 
@@ -304,13 +372,13 @@ public class GitAnnexGUI extends JFrame {
          */
         public void setMeta(String meta) {
             //System.err.println("received meta: "+meta);
-
             String[] lines=meta.split("\n");
 
             if(!lines[lines.length-1].equals("ok"))
                 throw new RuntimeException("metadata record does not end in 'ok'!");
 
             String receivedName=lines[0].substring(lines[0].indexOf(" ")+1);
+
             if(receivedName.equals(getFileName()))
                 throw new RuntimeException("metadata filename does not match! "+getFileName()+" vs. "+receivedName);
 
@@ -359,7 +427,6 @@ public class GitAnnexGUI extends JFrame {
             remotes=st[0].toCharArray();
             file=st[1];
             metadata=new Hashtable<String,String>();
-
         }
 
         public String toString() {
@@ -402,6 +469,15 @@ public class GitAnnexGUI extends JFrame {
             path=getRemotePath(name);
         }
 
+        /*
+        public boolean isSpecial(){
+        	return
+        		path=="web" ||
+        		path.indexOf("@")>0 ||
+
+        }
+        */
+
         public String toString() {
             StringBuilder sb=new StringBuilder();
             //sb.append(new String(new char[pos+1]).replace("\0", "_")); // PADDING!!!!!!
@@ -413,28 +489,23 @@ public class GitAnnexGUI extends JFrame {
 
         public String getRemotePath(String remote) {
             if(remote.equals("here")) return originDir.toString();
+
             if(remote.equals("web")) return "web";
 
             //System.err.println(remote);
-
             StringBuilder sb=new StringBuilder();
             sb.append("git remote -v |grep ");
             sb.append(remote);
             sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
-
             //System.err.println(sb);
-
             String[] cmd = {
                 "/bin/bash",
                 "-c",
                 sb.toString()
                 //"ls"
             };
-
             Command command=new Command(originDir,cmd);
             command.start();
-
-
             return command.getResult().get(0);
         }
     }
@@ -467,10 +538,8 @@ class Command {
             else
                 process=Runtime.getRuntime().exec(cmd,null,wd);
 
-            System.out.println("start: "+Arrays.toString(cmd));
-
+            System.err.println("start: "+Arrays.toString(cmd));
             String line="";
-
             BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
             /*    NOTE:  one line of err message cause readline to stuck
             while ((line = stderr.readLine()) != null) {
@@ -478,30 +547,26 @@ class Command {
                 err.add(line);
             }
             */
-
             //System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga // TODO: perche' si blocca?!?
             line="";
-
             BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
+
             while ((line = stdout.readLine()) != null) {
                 //System.out.println("in out... "+line);
                 result.add(line);
             }
-            //System.out.println("out:"+result);
 
+            //System.err.println("end: "+Arrays.toString(cmd));
         } catch(Exception e) {
             e.printStackTrace();
         }
-        System.out.println("end: "+Arrays.toString(cmd));
-
     }
 
     public Vector<String> getResult() {
         return result;
     }
+
     public Vector<String> getErr() {
         return err;
     }
-
-
 }

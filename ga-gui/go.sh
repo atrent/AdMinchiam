@@ -2,7 +2,7 @@
 
 clear
 
-astyle -A2 *java
+astyle -xe -f -A2 *java
 
 if
  javac *java
