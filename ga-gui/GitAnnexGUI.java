@@ -8,6 +8,9 @@ import java.io.*;
 import java.util.*;
 import java.text.*;
 
+
+//TODO: aggiungere dir script templates e combo per inserirli nella textarea
+
 public class GitAnnexGUI extends JFrame {
     private File originDir; // da "prependere" quando si esegue comando git-annex
     private AnnexedFiles annexedFiles;
@@ -88,7 +91,7 @@ public class GitAnnexGUI extends JFrame {
         matchesNum=new JTextField("nr. of matches");
         matchesNum.setEditable(false);
         //
-        grep=new JTextField("grep");
+        grep=new JTextField("grepping text here (no matches with this string, change it!)");
         //add(grep,BorderLayout.NORTH);
         grep.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
@@ -104,17 +107,18 @@ public class GitAnnexGUI extends JFrame {
         grepArea.setLayout(new BorderLayout());
         grepArea.add(grep);
         grepArea.add(matchesNum,BorderLayout.WEST);
+        grepArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
         add(grepArea,BorderLayout.NORTH);
         //
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
-
         //add(new JScrollPane(annexedFilesTable));
         //resize columns
+        /*
         for(int i=0; i<remotes.size(); i++) {
             annexedFilesTable.getColumnModel().getColumn(i).setMaxWidth(60);
         }
-
+        */
         textScript=new JTextArea("Generated script");
         //add(textScript,BorderLayout.EAST);
         templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
