@@ -36,7 +36,7 @@ public class GitAnnexGUI extends JFrame {
     private Vector<Remote> remotes;
 
     // gui components
-    private JTable annexedFilesTable;
+    private JTable annexedFilesTable;         // TODO: fare celle editabili?
     private JTextArea textScript;
     private JTextArea templateScript;
     private JTextField grep;
@@ -251,7 +251,7 @@ public class GitAnnexGUI extends JFrame {
 
     /** per ora assolutamente prove di generazione
      *
-     * TODO: ignorare gli special remotes??? o si puo' lavorarci sopra? (si', basta fare col cp invece che get)
+     * ex-todo: ignorare gli special remotes??? o si puo' lavorarci sopra? (si', basta fare col cp invece che get)
      *
      * TODO: ora va per indice nella JTable, convertire a "chiave"
      */
@@ -312,7 +312,7 @@ public class GitAnnexGUI extends JFrame {
     }
 
     private void initFromAnnex() {
-        //TODO: check if it is a git-annex!
+        // TODO: check if it is a git-annex!
         // list of files
         Command command=new Command(originDir,"git-annex list");
         command.start();
@@ -373,7 +373,6 @@ public class GitAnnexGUI extends JFrame {
 
         GitAnnexGUI mainWindow=new GitAnnexGUI(f);
         mainWindow.setVisible(true);
-        //TODO: riempire da 'git-annex list'
     }
 
     class AnnexedFiles extends Vector<AnnexedFile> {
@@ -524,7 +523,9 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public char getMask(int i) {
-            return remotes[i];  // TODO: check bounds!!!
+            if(i>=0 && i<remotes.length) return remotes[i];
+
+            return '!';
         }
 
         /** si inizializza direttamente dalla stringa di git annex list
@@ -655,7 +656,7 @@ class Command {
                 err.add(line);
             }
             */
-            //System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga // TODO: perche' si blocca?!?
+            //System.err.println("err: "+stderr.readLine());  // prendo solo la prima riga // TODO: perche' si blocca la readline?!?
             line="";
             BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
 
