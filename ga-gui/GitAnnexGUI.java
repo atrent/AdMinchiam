@@ -5,13 +5,16 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.table.*;
 import java.io.*;
+import java.nio.file.*;
 import java.util.*;
 import java.text.*;
 
-
-//TODO: aggiungere dir script templates e combo per inserirli nella textarea
-
 public class GitAnnexGUI extends JFrame {
+    // constants
+    public final static String TEMPLATES_DIR="ScriptTemplates";
+
+
+    // attributes
     private File originDir; // da "prependere" quando si esegue comando git-annex
     private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
@@ -22,6 +25,7 @@ public class GitAnnexGUI extends JFrame {
     private JTextArea templateScript;
     private JTextField grep;
     private JTextField matchesNum;
+    private JComboBox<File> scripts;
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -102,14 +106,14 @@ public class GitAnnexGUI extends JFrame {
                 matchesNum.setText(annexedFiles.matching()+" matches");
             }
         });
-        //
+        // GREP AREA
         JPanel grepArea=new JPanel();
         grepArea.setLayout(new BorderLayout());
         grepArea.add(grep);
         grepArea.add(matchesNum,BorderLayout.WEST);
         grepArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
         add(grepArea,BorderLayout.NORTH);
-        //
+        // FILE TABLE
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
         //add(new JScrollPane(annexedFilesTable));
@@ -123,6 +127,19 @@ public class GitAnnexGUI extends JFrame {
         //add(textScript,BorderLayout.EAST);
         templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
         //add(templateScript,BorderLayout.EAST);
+        // SCRIPT AREA
+        JPanel scriptArea=new JPanel();
+        scriptArea.setLayout(new BorderLayout());
+        scriptArea.add(templateScript);
+        scriptArea.add(scripts=new JComboBox<File>(),BorderLayout.NORTH);
+        scripts.addActionListener(new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                //System.err.println("script: "+scripts.getSelectedItem());
+                templateScript.setText(getScript());
+            }
+        });
+        fillScriptsCombo();
+        //
         JScrollPane tbl;
         JSplitPane pane=
             new JSplitPane(
@@ -130,13 +147,37 @@ public class GitAnnexGUI extends JFrame {
             tbl=new JScrollPane(annexedFilesTable),
             new JSplitPane(
                 JSplitPane.VERTICAL_SPLIT,
-                new JScrollPane(templateScript),
+                new JScrollPane(scriptArea),
                 new JScrollPane(textScript)
             )
         );
         tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
         add(pane);
-        pane.setDividerLocation(700);
+        pane.setDividerLocation(800);
+    }
+
+    private String getScript() {
+        try {
+            byte[] encoded =
+                Files.readAllBytes(
+                    Paths.get(scripts.getSelectedItem().toString())
+                );
+            return new String(encoded);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        return "dummy";
+    }
+
+    private void fillScriptsCombo() {
+        File dir=new File(TEMPLATES_DIR);
+
+        if(dir.isDirectory()) {
+            for(File script: dir.listFiles()) {
+                scripts.addItem(script);
+            }
+        } else throw new RuntimeException("missing templates dir!");
     }
 
     private void initMenu() {
