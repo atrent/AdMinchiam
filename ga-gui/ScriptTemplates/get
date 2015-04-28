@@ -1,0 +1,6 @@
+##########
+#{0} is remote
+#{1} is filename
+cd {0}
+git-annex get {1}
+##########
