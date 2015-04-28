@@ -9,10 +9,29 @@ import java.nio.file.*;
 import java.util.*;
 import java.text.*;
 
+//TODO: add reload repo
+
+
+/**
+ * 	2015 © Andrea Trentini (http://atrent.it)
+ *
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 public class GitAnnexGUI extends JFrame {
     // constants
     public final static String TEMPLATES_DIR="ScriptTemplates";
-
 
     // attributes
     private File originDir; // da "prependere" quando si esegue comando git-annex
@@ -41,6 +60,9 @@ public class GitAnnexGUI extends JFrame {
         }
     */
 
+
+    /** TODO: ripensarla un po'?
+     */
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
             int size=remotes.size();
@@ -60,6 +82,7 @@ public class GitAnnexGUI extends JFrame {
             return "";
         }
 
+
         public int getColumnCount() {
             return remotes.size()+1+1; // +1 per filename, +1 per metadati
         }
@@ -75,8 +98,13 @@ public class GitAnnexGUI extends JFrame {
             if(column==remotes.size()+1)
                 return "Meta";
 
-            return remotes.get(column).getName();
+            return annexedFiles.getXonRemote(column)+":"+remotes.get(column).getName();
         }
+    }
+
+    private void reset() {
+        annexedFiles=new AnnexedFiles();
+        remotes=new Vector<Remote>();
     }
 
     public GitAnnexGUI(File f) {
@@ -86,11 +114,11 @@ public class GitAnnexGUI extends JFrame {
         setExtendedState(MAXIMIZED_BOTH);
         //
         originDir=f;
-        annexedFiles=new AnnexedFiles();
-        remotes=new Vector<Remote>();
+        //
         initMenu();
         //
-        initFromAnnex(f);
+        reset();
+        initFromAnnex();
         //
         matchesNum=new JTextField("nr. of matches");
         matchesNum.setEditable(false);
@@ -117,12 +145,7 @@ public class GitAnnexGUI extends JFrame {
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
         //add(new JScrollPane(annexedFilesTable));
-        //resize columns
-        /*
-        for(int i=0; i<remotes.size(); i++) {
-            annexedFilesTable.getColumnModel().getColumn(i).setMaxWidth(60);
-        }
-        */
+        //
         textScript=new JTextArea("Generated script");
         //add(textScript,BorderLayout.EAST);
         templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
@@ -181,12 +204,9 @@ public class GitAnnexGUI extends JFrame {
     }
 
     private void initMenu() {
-        // ///////////////////////////////////////
-        // MENU
         JMenuBar menuBar = new JMenuBar();
         setJMenuBar(menuBar);
-        // ///////
-        // // FILE
+        //
         JMenu mnFile = new JMenu("Selections");
         menuBar.add(mnFile);
         JMenuItem mntmGen = new JMenuItem("Generate");
@@ -194,6 +214,16 @@ public class GitAnnexGUI extends JFrame {
         mntmGen.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 generate();
+            }
+        });
+        //
+        JMenuItem mntmReload = new JMenuItem("Reload");
+        mnFile.add(mntmReload);
+        mntmReload.addActionListener(new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                reset();
+                initFromAnnex();
+                ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
             }
         });
         /*
@@ -284,10 +314,10 @@ public class GitAnnexGUI extends JFrame {
         textScript.setText(sb.toString());
     }
 
-    private void initFromAnnex(File f) {
+    private void initFromAnnex() {
         //TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(f,"git-annex list");
+        Command command=new Command(originDir,"git-annex list");
         command.start();
 
         //Process process=Runtime.getRuntime().exec("git-annex list",null,f);
@@ -310,7 +340,7 @@ public class GitAnnexGUI extends JFrame {
 
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(f,"git-annex metadata");
+        command=new Command(originDir,"git-annex metadata");
         command.start();
         StringBuffer sb=new StringBuffer();
         int annexed=0;
@@ -351,18 +381,32 @@ public class GitAnnexGUI extends JFrame {
 
     class AnnexedFiles extends Vector<AnnexedFile> {
 
+        public int getXonRemote(int remote) {
+            int count=0;
+
+            for(AnnexedFile af: this) {
+                if(af.getMask(remote)=='X') count++;
+            }
+
+            return count;
+        }
+
+
         /** devo filtrare solo i matching, restituisce l'indexesimo che matcha
          */
         public AnnexedFile get(int index) {
             if(grep==null) return super.get(index);
 
+            //
             String txt=grep.getText();
+
+            if(txt.length()==0) return super.get(index);
+
+            //
             int i=0;
             boolean found=false;
 
-            while(index>=0) {
-                //System.err.println("el: "+super.get(i));
-                //System.err.println("gr: "+grep.getText());
+            while(index>=0 && i<size()) {
                 if(super.get(i).matches(txt)) {
                     index--;
                     found=true;
