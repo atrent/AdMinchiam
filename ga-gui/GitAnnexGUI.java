@@ -203,20 +203,29 @@ public class GitAnnexGUI extends JFrame {
     private void initMenu() {
         JMenuBar menuBar = new JMenuBar();
         setJMenuBar(menuBar);
+        /*
+        menuBar.add(new JMenu("prova1"));
+        menuBar.add(new JMenu("prova2"));
+        menuBar.add(new JMenu("prova3"));
+        */
+        //JMenu mnFile = new JMenu("Selections");
+        //menuBar.add(mnFile);
         //
-        JMenu mnFile = new JMenu("Selections");
-        menuBar.add(mnFile);
-        JMenuItem mntmGen = new JMenuItem("Generate");
-        mnFile.add(mntmGen);
-        mntmGen.addActionListener(new AbstractAction() {
+        //JMenuItem gen = new JMenuItem("Generate");
+        JButton gen = new JButton("Generate");
+        //mnFile.add(gen);
+        menuBar.add(gen);
+        gen.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 generate();
             }
         });
         //
-        JMenuItem mntmReload = new JMenuItem("Reload");
-        mnFile.add(mntmReload);
-        mntmReload.addActionListener(new AbstractAction() {
+        //JMenuItem reload = new JMenuItem("Reload");
+        JButton reload = new JButton("Reload");
+        //mnFile.add(reload);
+        menuBar.add(reload);
+        reload.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
                 reset();
                 initFromAnnex();
@@ -232,6 +241,7 @@ public class GitAnnexGUI extends JFrame {
                     }
                 });
         */
+        //menuBar.add(new JToolBar());
     }
 
     /*
