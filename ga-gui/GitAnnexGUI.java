@@ -9,9 +9,6 @@ import java.nio.file.*;
 import java.util.*;
 import java.text.*;
 
-//TODO: add reload repo
-
-
 /**
  * 	2015 © Andrea Trentini (http://atrent.it)
  *
