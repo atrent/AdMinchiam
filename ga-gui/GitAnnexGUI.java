@@ -634,9 +634,9 @@ public class GitAnnexGUI extends JFrame {
             if(remote.equals("web")) return "web";
 
             StringBuilder sb=new StringBuilder();
-            sb.append("git remote -v |grep ");
+            sb.append("git remote -v |grep '");
             sb.append(remote);
-            sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
+            sb.append("'|cut -f2 |cut -f1 -d' '|sort|uniq");
             String[] cmd = {
                 "/bin/bash",
                 "-c",
