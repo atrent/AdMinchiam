@@ -9,6 +9,7 @@ if
  #javac *java
  javac -Xlint:unchecked *java
 then
- echo === RUNNING...
- java GitAnnexGUI /home/atrentini/Media-annex
+ echo === RUNNING on TEST...
+ #java GitAnnexGUI /home/atrentini/Media-annex
+ java GitAnnexGUI /home/VARIE-nonbackupped/AnnexTesting
 fi

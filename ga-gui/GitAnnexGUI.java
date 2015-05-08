@@ -10,7 +10,7 @@ import java.util.*;
 import java.text.*;
 
 /**
- * 	2015 © Andrea Trentini (http://atrent.it)
+ * 	2015 - © Andrea Trentini (http://atrent.it) - Giovanni Biscuolo (http://xelera.eu)
  *
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -28,10 +28,12 @@ import java.text.*;
 
 public class GitAnnexGUI extends JFrame {
     // constants
+    public final static String MAIN_TITLE="GitAnnexGUI";
     public final static String TEMPLATES_DIR="ScriptTemplates";
+    public final static String SAVED_STATUS="saved.status";
 
     // attributes
-    private File originDir; // da "prependere" quando si esegue comando git-annex
+    //private String originDir; // da "prependere" quando si esegue comando git-annex
     private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
 
@@ -39,9 +41,19 @@ public class GitAnnexGUI extends JFrame {
     private JTable annexedFilesTable;         // TODO: fare celle editabili?
     private JTextArea textScript;
     private JTextArea templateScript;
+    private JTextField origin;
     private JTextField grep;
     private JTextField matchesNum;
     private JComboBox<File> scripts;
+
+
+    public void setOrigin(String f) {
+        origin.setText(f);
+    }
+    public String getOrigin() {
+        if(origin!=null)        return origin.getText();
+        else return "";
+    }
 
     /*
         class RemotesModel extends AbstractTableModel {
@@ -104,23 +116,23 @@ public class GitAnnexGUI extends JFrame {
         remotes=new Vector<Remote>();
     }
 
-    public GitAnnexGUI(File f) {
-        super("GitAnnexGUI");
+    public GitAnnexGUI() {
+        super(MAIN_TITLE);
         //
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
         //
-        originDir=f;
+        //originDir=f;
+        //setTitle(MAIN_TITLE+": "+originDir);
         //
         initMenu();
         //
         reset();
-        initFromAnnex();
         //
         matchesNum=new JTextField("nr. of matches");
         matchesNum.setEditable(false);
         //
-        grep=new JTextField("grepping text here (no matches with this string, change it!)");
+        grep=new JTextField(/*"grepping text here (no matches with this string, change it!)"*/);
         //add(grep,BorderLayout.NORTH);
         grep.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
@@ -131,13 +143,13 @@ public class GitAnnexGUI extends JFrame {
                 matchesNum.setText(annexedFiles.matching()+" matches");
             }
         });
-        // GREP AREA
-        JPanel grepArea=new JPanel();
-        grepArea.setLayout(new BorderLayout());
-        grepArea.add(grep);
-        grepArea.add(matchesNum,BorderLayout.WEST);
-        grepArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
-        add(grepArea,BorderLayout.NORTH);
+        JPanel settingsArea=new JPanel();
+        settingsArea.setLayout(new BorderLayout());
+        settingsArea.add(grep);
+        settingsArea.add(matchesNum,BorderLayout.WEST);
+        settingsArea.add(origin=new JTextField(),BorderLayout.NORTH);
+        settingsArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
+        add(settingsArea,BorderLayout.NORTH);
         // FILE TABLE
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
@@ -324,7 +336,7 @@ public class GitAnnexGUI extends JFrame {
     private void initFromAnnex() {
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(originDir,"git-annex list");
+        Command command=new Command(getOrigin(),"git-annex list");
         command.start();
 
         //Process process=Runtime.getRuntime().exec("git-annex list",null,f);
@@ -347,7 +359,7 @@ public class GitAnnexGUI extends JFrame {
 
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(originDir,"git-annex metadata");
+        command=new Command(getOrigin(),"git-annex metadata");
         command.start();
         StringBuffer sb=new StringBuffer();
         int annexed=0;
@@ -363,6 +375,8 @@ public class GitAnnexGUI extends JFrame {
                 annexed++;
             }
         }
+
+        saveStatus();
     }
 
     /**
@@ -381,11 +395,16 @@ public class GitAnnexGUI extends JFrame {
             System.exit(2);
         }
 
-        GitAnnexGUI mainWindow=new GitAnnexGUI(f);
+        GitAnnexGUI mainWindow=new GitAnnexGUI();
+        mainWindow.setOrigin(arg[0]);
         mainWindow.setVisible(true);
+
+        if(!mainWindow.loadStatus()) {
+            mainWindow.initFromAnnex();
+        }
     }
 
-    class AnnexedFiles extends Vector<AnnexedFile> {
+    class AnnexedFiles extends Vector<AnnexedFile> implements Serializable {
 
         public int getXonRemote(int remote) {
             int count=0;
@@ -446,7 +465,7 @@ public class GitAnnexGUI extends JFrame {
 
     /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
      */
-    class AnnexedFile {
+    class AnnexedFile implements Serializable {
         private String file;
         private char[] remotes; // TODO: a parte 'X' decidere una semantica
         private Hashtable<String,String> metadata;
@@ -569,7 +588,7 @@ public class GitAnnexGUI extends JFrame {
         }
     }
 
-    class Remote {
+    class Remote implements Serializable {
         private String name,path;
 
         public String getName() {
@@ -607,7 +626,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public String getRemotePath(String remote) {
-            if(remote.equals("here")) return originDir.toString();
+            if(remote.equals("here")) return getOrigin();
 
             if(remote.equals("web")) return "web";
 
@@ -623,9 +642,43 @@ public class GitAnnexGUI extends JFrame {
                 sb.toString()
                 //"ls"
             };
-            Command command=new Command(originDir,cmd);
+            Command command=new Command(getOrigin(),cmd);
             command.start();
             return command.getResult().get(0);
+        }
+    }
+
+    public boolean loadStatus() {
+        try {
+            File status=new File(SAVED_STATUS);
+
+            if(status.isFile()) {
+                ObjectInputStream in=new ObjectInputStream(new FileInputStream(status));
+                setOrigin(in.readObject().toString());
+                annexedFiles=(AnnexedFiles)in.readObject();
+                remotes=(Vector<Remote>)in.readObject();
+                return true; // se ha caricato
+            }
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+    public void saveStatus() {
+        System.err.println("saving...");
+
+        try {
+            File status=new File(SAVED_STATUS);
+            ObjectOutputStream out=new ObjectOutputStream(new FileOutputStream(status));
+            out.writeObject(getOrigin());
+            out.writeObject(annexedFiles);
+            out.writeObject(remotes);
+            out.flush();
+            out.close();
+            System.err.println("saved!");
+        } catch(Exception e) {
+            e.printStackTrace();
         }
     }
 }
@@ -640,9 +693,18 @@ class Command {
     private Vector<String> err;
     private Process process;
 
+    public Command(String wd,String cmd) {
+        this(new File(wd), new String[] {cmd});
+    }
+
+    public Command(String wd,String[] cmd) {
+        this(new File(wd), cmd);
+    }
+
     public Command(File wd,String cmd) {
         this(wd, new String[] {cmd});
     }
+
     public Command(File wd,String[] cmd) {
         this.wd=wd;
         this.cmd=cmd;
@@ -688,4 +750,6 @@ class Command {
     public Vector<String> getErr() {
         return err;
     }
+
+
 }
