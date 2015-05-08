@@ -352,10 +352,12 @@ public class GitAnnexGUI extends JFrame {
         // TODO: check if it is a git-annex!
         // list of files
         Command command=new Command(getOrigin(),"git-annex list");
-        command.start();
-
+        command.start(); // bloccante
+        //
+        long starting=System.currentTimeMillis();
+        //
         for(String item: command.getResult()) {
-            if(item.indexOf("here")>=0) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
+            if(item.indexOf("here")==0) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe), inizia per "here"
             else if(item.startsWith("|") && !item.endsWith("|")) {
                 //other remotes
                 remotes.add(new Remote(item.replace("|", "")));
@@ -366,7 +368,10 @@ public class GitAnnexGUI extends JFrame {
                 }
             }
         }
-
+        
+        //
+        System.err.println("tempo di parsing dei file:"+(System.currentTimeMillis()-starting));
+        //
         //System.out.println(remotes.get(1).getPath());
         // metadata
         command=new Command(getOrigin(),"git-annex metadata");
@@ -728,6 +733,7 @@ class Command {
                 process=Runtime.getRuntime().exec(cmd,null,wd);
 
             System.err.println("start: "+Arrays.toString(cmd));
+            long starting=System.currentTimeMillis();
             String line="";
             BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
             /*    NOTE:  one line of err message cause readline to stuck
@@ -745,7 +751,8 @@ class Command {
                 result.add(line);
             }
 
-            //System.err.println("end: "+Arrays.toString(cmd));
+            System.err.print("end: "+Arrays.toString(cmd));
+            System.err.println(", time (ms): "+(System.currentTimeMillis()-starting) );
         } catch(Exception e) {
             e.printStackTrace();
         }
@@ -762,8 +769,14 @@ class Command {
 
 }
 
-
-
-
+//TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
 
 //TODO: creare cache nominativa per repo
+
+//TODO: c'e' iteratore solo sui selezionati???
+
+//TODO: aggiungere campo numProgressivo
+
+//TODO:json
+
+//TODO: check null pointer
