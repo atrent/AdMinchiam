@@ -46,13 +46,14 @@ public class GitAnnexGUI extends JFrame {
     private JTextField matchesNum;
     private JComboBox<File> scripts;
 
-
     public void setOrigin(String f) {
         origin.setText(f);
     }
     public String getOrigin() {
-        if(origin!=null)        return origin.getText();
-        else return "";
+        if(origin!=null)
+            return origin.getText();
+        else
+            return "";
     }
 
     /*
@@ -75,6 +76,7 @@ public class GitAnnexGUI extends JFrame {
     class FilesModel extends AbstractTableModel {
         public String getValueAt(int r,int c) {
             int size=remotes.size();
+            //System.err.println("inner size:"+remotes.size());
 
             if(c<size) {
                 return Character.toString(annexedFiles.get(r).getMask(c)); // mask
@@ -93,11 +95,13 @@ public class GitAnnexGUI extends JFrame {
 
 
         public int getColumnCount() {
-            return remotes.size()+1+1; // +1 per filename, +1 per metadati
+            int r=remotes.size()+1+1; // +1 per filename, +1 per metadati
+            return r;
         }
 
         public int getRowCount() {
-            return annexedFiles.matching();
+            int r=annexedFiles.matching();
+            return r;
         }
 
         public String getColumnName(int column) {
@@ -111,7 +115,14 @@ public class GitAnnexGUI extends JFrame {
         }
     }
 
+
+    private void fireTable() {
+        ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
+        ((AbstractTableModel)annexedFilesTable.getModel()).fireTableStructureChanged();
+    }
     private void reset() {
+        if(grep!=null) grep.setText("");
+
         annexedFiles=new AnnexedFiles();
         remotes=new Vector<Remote>();
     }
@@ -136,11 +147,10 @@ public class GitAnnexGUI extends JFrame {
         //add(grep,BorderLayout.NORTH);
         grep.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                //System.err.println("grep changed");
-                //annexedFilesTable.repaint();
-                ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
                 //System.err.println("matching: "+annexedFiles.matching());
                 matchesNum.setText(annexedFiles.matching()+" matches");
+                //System.err.println("grep changed");
+                fireTable();
             }
         });
         JPanel settingsArea=new JPanel();
@@ -148,6 +158,11 @@ public class GitAnnexGUI extends JFrame {
         settingsArea.add(grep);
         settingsArea.add(matchesNum,BorderLayout.WEST);
         settingsArea.add(origin=new JTextField(),BorderLayout.NORTH);
+        origin.addActionListener(new AbstractAction() {
+            public void actionPerformed(ActionEvent e) {
+                initFromAnnex();
+            }
+        });
         settingsArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
         add(settingsArea,BorderLayout.NORTH);
         // FILE TABLE
@@ -239,9 +254,7 @@ public class GitAnnexGUI extends JFrame {
         menuBar.add(reload);
         reload.addActionListener(new AbstractAction() {
             public void actionPerformed(ActionEvent e) {
-                reset();
                 initFromAnnex();
-                ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
             }
         });
         /*
@@ -334,17 +347,14 @@ public class GitAnnexGUI extends JFrame {
     }
 
     private void initFromAnnex() {
+        //TODO: clessidra o progress bar...
+        reset();
         // TODO: check if it is a git-annex!
         // list of files
         Command command=new Command(getOrigin(),"git-annex list");
         command.start();
 
-        //Process process=Runtime.getRuntime().exec("git-annex list",null,f);
-        ////BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
-        //BufferedReader stdout=new BufferedReader(new InputStreamReader(process.getInputStream()));
-        //while(stderr.available()>0)System.err.println(stderr.readLine());
         for(String item: command.getResult()) {
-            //System.err.println(item);
             if(item.equals("here")) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
             else if(item.startsWith("|") && !item.endsWith("|")) {
                 //other remotes
@@ -365,7 +375,6 @@ public class GitAnnexGUI extends JFrame {
         int annexed=0;
 
         for(String item: command.getResult()) {
-            //System.err.println("meta: "+item);
             sb.append(item);
             sb.append("\n");
 
@@ -377,6 +386,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         saveStatus();
+        fireTable();
     }
 
     /**
@@ -438,11 +448,8 @@ public class GitAnnexGUI extends JFrame {
                 }
 
                 i++;
-                //System.err.print("["+i+"]");
-                //System.err.print("("+index+")");
             }
 
-            //System.err.println();
             if(found)return super.get(i-1);
             else return super.get(i);
         }
@@ -507,7 +514,6 @@ public class GitAnnexGUI extends JFrame {
          * ok
          */
         public void setMeta(String meta) {
-            //System.err.println("received meta: "+meta);
             String[] lines=meta.split("\n");
 
             if(!lines[lines.length-1].equals("ok"))
@@ -521,7 +527,6 @@ public class GitAnnexGUI extends JFrame {
             for(int l=1; l<lines.length-1; l++) {
                 if(lines[l].indexOf("=")>0) {
                     String[] split=lines[l].split("=");
-                    //System.err.println(split[0]+","+split[1]);
                     metadata.put(split[0].trim(),split[1].trim());
                 }
             }
@@ -560,7 +565,6 @@ public class GitAnnexGUI extends JFrame {
         /** si inizializza direttamente dalla stringa di git annex list
          */
         public AnnexedFile(String annexItem) {
-            //System.err.println(annexItem);
             String[] st=annexItem.split(" ");
             remotes=st[0].toCharArray();
             file=st[1];
@@ -602,7 +606,6 @@ public class GitAnnexGUI extends JFrame {
         /** si inizializza direttamente dalla stringa di git annex list
          */
         public Remote(String rname) {
-            //System.err.println(rname);
             name=rname;
             path=getRemotePath(name);
         }
@@ -630,12 +633,10 @@ public class GitAnnexGUI extends JFrame {
 
             if(remote.equals("web")) return "web";
 
-            //System.err.println(remote);
             StringBuilder sb=new StringBuilder();
             sb.append("git remote -v |grep ");
             sb.append(remote);
             sb.append("|cut -f2 |cut -f1 -d' '|sort|uniq");
-            //System.err.println(sb);
             String[] cmd = {
                 "/bin/bash",
                 "-c",
@@ -649,6 +650,8 @@ public class GitAnnexGUI extends JFrame {
     }
 
     public boolean loadStatus() {
+        System.err.println("loading...");
+
         try {
             File status=new File(SAVED_STATUS);
 
@@ -657,6 +660,8 @@ public class GitAnnexGUI extends JFrame {
                 setOrigin(in.readObject().toString());
                 annexedFiles=(AnnexedFiles)in.readObject();
                 remotes=(Vector<Remote>)in.readObject();
+                System.err.println("loaded...");
+                fireTable();
                 return true; // se ha caricato
             }
         } catch(Exception e) {
