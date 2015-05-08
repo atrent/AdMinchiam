@@ -249,7 +249,7 @@ public class GitAnnexGUI extends JFrame {
         });
         //
         //JMenuItem reload = new JMenuItem("Reload");
-        JButton reload = new JButton("Reload");
+        JButton reload = new JButton("Reload annex");
         //mnFile.add(reload);
         menuBar.add(reload);
         reload.addActionListener(new AbstractAction() {
@@ -355,6 +355,7 @@ public class GitAnnexGUI extends JFrame {
         command.start(); // bloccante
         //
         long starting=System.currentTimeMillis();
+
         //
         for(String item: command.getResult()) {
             if(item.indexOf("here")==0) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe), inizia per "here"
@@ -368,7 +369,7 @@ public class GitAnnexGUI extends JFrame {
                 }
             }
         }
-        
+
         //
         System.err.println("tempo di parsing dei file:"+(System.currentTimeMillis()-starting));
         //
@@ -771,12 +772,18 @@ class Command {
 
 //TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
 
-//TODO: creare cache nominativa per repo
+//TODO: creare cache nominativa per repo?
 
 //TODO: c'e' iteratore solo sui selezionati???
 
 //TODO: aggiungere campo numProgressivo
 
-//TODO:json
+//TODO: json?!? solo se aumenta la velocita'
 
-//TODO: check null pointer
+//TODO: check null pointer??? (non salta piu' fuori)
+
+//TODO: autodimensionamento colonne JTable
+
+//TODO: (jtable) cambiare componente?
+
+//TODO: (opzionale) salva script con nome
