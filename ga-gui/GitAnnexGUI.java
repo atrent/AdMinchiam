@@ -645,7 +645,10 @@ public class GitAnnexGUI extends JFrame {
             };
             Command command=new Command(getOrigin(),cmd);
             command.start();
-            return command.getResult().get(0);
+
+            if(command.getResult().size()>0)
+                return command.getResult().get(0);
+            else return "";
         }
     }
 
