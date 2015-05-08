@@ -355,7 +355,7 @@ public class GitAnnexGUI extends JFrame {
         command.start();
 
         for(String item: command.getResult()) {
-            if(item.indexOf("here")>0) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
+            if(item.indexOf("here")>=0) remotes.add(new Remote(item)); //il primo e' "here" (dovrebbe)
             else if(item.startsWith("|") && !item.endsWith("|")) {
                 //other remotes
                 remotes.add(new Remote(item.replace("|", "")));
