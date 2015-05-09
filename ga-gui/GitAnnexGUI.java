@@ -31,13 +31,30 @@ public class GitAnnexGUI extends JFrame {
     public final static String MAIN_TITLE="GitAnnexGUI";
     public final static String TEMPLATES_DIR="ScriptTemplates";
     public final static String SAVED_STATUS="saved.status";
+    public final static int LASTCOLWIDTH=300;
+
+    //private String originDir; // da "prependere" quando si esegue comando git-annex
 
     // attributes
-    //private String originDir; // da "prependere" quando si esegue comando git-annex
     private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
 
-    // gui components
+    // NEW gui components
+    private Grep grepComponent;
+    class Grep extends JPanel {
+
+    }
+    private OriginAnnex originComponent;
+    class OriginAnnex extends JPanel {
+
+    }
+    private Scripts scriptsComponent;
+    class Scripts extends JPanel {
+
+    }
+    //
+
+    // OLD gui components
     private JTable annexedFilesTable;         // TODO: fare celle editabili?
     private JTextArea textScript;
     private JTextArea templateScript;
@@ -55,21 +72,6 @@ public class GitAnnexGUI extends JFrame {
         else
             return "";
     }
-
-    /*
-        class RemotesModel extends AbstractTableModel {
-            public String getValueAt(int r,int c) {
-                return remotes.get(r);
-            }
-            public int getColumnCount() {
-                return 1;
-            }
-            public int getRowCount() {
-                return remotes.size();
-            }
-        }
-    */
-
 
     /** TODO: ripensarla un po'?
      */
@@ -119,6 +121,8 @@ public class GitAnnexGUI extends JFrame {
     private void fireTable() {
         ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
         ((AbstractTableModel)annexedFilesTable.getModel()).fireTableStructureChanged();
+        // annexedFilesTable.getColumnModel().getColumn(remotes.size()+1).setMinWidth(LASTCOLWIDTH);
+        // annexedFilesTable.getColumnModel().getColumn(remotes.size()+2).setMinWidth(LASTCOLWIDTH);
     }
     private void reset() {
         if(grep!=null) grep.setText("");
@@ -129,13 +133,14 @@ public class GitAnnexGUI extends JFrame {
 
     public GitAnnexGUI() {
         super(MAIN_TITLE);
-        //
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
-        //
         //originDir=f;
         //setTitle(MAIN_TITLE+": "+originDir);
         //
+        // TODO: fattorizzare, creare componenti (inner classes) Grep, OriginAnnex, Scripts
+        //
+        //////////////////////////////////////////////////////////////////////////
         initMenu();
         //
         reset();
@@ -168,6 +173,10 @@ public class GitAnnexGUI extends JFrame {
         // FILE TABLE
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
+        //
+        //annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
+        annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        //
         //add(new JScrollPane(annexedFilesTable));
         //
         textScript=new JTextArea("Generated script");
@@ -239,7 +248,7 @@ public class GitAnnexGUI extends JFrame {
         //menuBar.add(mnFile);
         //
         //JMenuItem gen = new JMenuItem("Generate");
-        JButton gen = new JButton("Generate");
+        JButton gen = new JButton("Generate script from current template+selection");
         //mnFile.add(gen);
         menuBar.add(gen);
         gen.addActionListener(new AbstractAction() {
