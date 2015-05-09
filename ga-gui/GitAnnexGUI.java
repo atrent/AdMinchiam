@@ -33,23 +33,23 @@ public class GitAnnexGUI extends JFrame {
     public final static String SAVED_STATUS="saved.status";
     public final static int LASTCOLWIDTH=300;
 
-    //private String originDir; // da "prependere" quando si esegue comando git-annex
-
-    // attributes
+    // DATA attributes
     private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
 
     // NEW gui components
+    FilesModel fm;
+    //
     private Grep grepComponent;
     class Grep extends JPanel {
-        private final static String LABEL="nr. of matches: ";
+        private final static String LABEL="   Nr. of items: ";
         //
         private JLabel numMatches;
         public void setMatches(int m) {
-            numMatches.setText(LABEL+m);
+            setMatches(Integer.toString(m));
         }
         public void setMatches(String m) {
-            numMatches.setText(LABEL+m);
+            numMatches.setText(LABEL+m+"   ");
         }
         private JTextField grep;
         public String getText() {
@@ -57,6 +57,13 @@ public class GitAnnexGUI extends JFrame {
         }
         public boolean isEmpty() {
             return getText().length()==0;
+        }
+
+        public void updateMatching() {
+            int matching=annexedFiles.matching(getText());
+            System.err.println("matching: "+matching);
+            setMatches(matching);
+            fireTable();
         }
 
         public Grep() {
@@ -70,11 +77,10 @@ public class GitAnnexGUI extends JFrame {
             add(grep,BorderLayout.CENTER);
             grep.addActionListener(new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
-                    //System.err.println("matching: "+annexedFiles.matching());
-                    setMatches(annexedFiles.matching());
-                    fireTable();
+                    updateMatching();
                 }
             });
+            updateMatching();
         }
 
     }
@@ -116,14 +122,16 @@ public class GitAnnexGUI extends JFrame {
     //
     private Scripts scriptsComponent;
     class Scripts extends JPanel {
-        private JTextArea textScript;
+        private JTextArea script;
         public void setScript(String sc) {
-            textScript.setText(sc);
+            script.setText(sc);
         }
-        private JTextArea templateScript;
+        //
+        private JTextArea template;
         public String getTemplate() {
-            return templateScript.getText();
+            return template.getText();
         }
+        //
         private JComboBox<File> scripts;
         public String getSelected() {
             return scripts.getSelectedItem().toString();
@@ -132,39 +140,42 @@ public class GitAnnexGUI extends JFrame {
             setLayout(new BorderLayout());//forse no
             //
             JButton gen = new JButton("Generate script from current template+selection");
-            add(gen,BorderLayout.SOUTH);
+            add(gen,BorderLayout.NORTH);
             gen.addActionListener(new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
                     generate();
                 }
             });
             //
-            textScript=new JTextArea("Generated script");
-            add(textScript,BorderLayout.CENTER);
+            script=new JTextArea("Generated script");
+            //script.setBorder(BorderFactory.createLineBorder(Color.black));
+            add(script/*,BorderLayout.CENTER*/);
             //
-            templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
-            add(templateScript,BorderLayout.WEST);
+            template=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
+            template.setBorder(BorderFactory.createLineBorder(Color.black));
+            add(template,BorderLayout.EAST);
             //
             scripts=new JComboBox<File>();
-            add(scripts,BorderLayout.NORTH);
-            scripts.addActionListener(new AbstractAction() {
-                public void actionPerformed(ActionEvent e) {
-                    //System.err.println("script: "+scripts.getSelectedItem());
-                    templateScript.setText(getScript());
-                }
-            });
+            add(scripts,BorderLayout.SOUTH);
             File dir=new File(TEMPLATES_DIR);
 
             if(dir.isDirectory()) {
-                for(File script: dir.listFiles()) {
-                    scripts.addItem(script);
+                for(File scr: dir.listFiles()) {
+                    scripts.addItem(scr);
                 }
             } else throw new RuntimeException("missing templates dir!");
+
+            scripts.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    //System.err.println("script: "+scripts.getSelectedItem());
+                    template.setText(getScript());
+                }
+            });
         }
 
     }
 
-    // OLD gui components
+    // MAIN gui component
     private JTable annexedFilesTable;         // TODO: fare celle editabili?
 
 
@@ -190,14 +201,13 @@ public class GitAnnexGUI extends JFrame {
             return "";
         }
 
-
         public int getColumnCount() {
             int r=remotes.size()+1+1; // +1 per filename, +1 per metadati
             return r;
         }
 
         public int getRowCount() {
-            int r=annexedFiles.matching();
+            int r=annexedFiles.matching(grepComponent.getText());
             return r;
         }
 
@@ -214,13 +224,16 @@ public class GitAnnexGUI extends JFrame {
 
 
     private void fireTable() {
-        ((AbstractTableModel)annexedFilesTable.getModel()).fireTableDataChanged();
-        ((AbstractTableModel)annexedFilesTable.getModel()).fireTableStructureChanged();
-        // annexedFilesTable.getColumnModel().getColumn(remotes.size()+1).setMinWidth(LASTCOLWIDTH);
-        // annexedFilesTable.getColumnModel().getColumn(remotes.size()+2).setMinWidth(LASTCOLWIDTH);
+        if(fm!=null) {
+            fm.fireTableDataChanged();
+            fm.fireTableStructureChanged();
+            TableColumnModel m=annexedFilesTable.getColumnModel();
+            m.getColumn(fm.getColumnCount()-1).setMinWidth(LASTCOLWIDTH);
+            m.getColumn(fm.getColumnCount()-2).setMinWidth(LASTCOLWIDTH);
+        }
     }
-    private void reset() {
-        //grepComponent.reset(); //TODO: forse non serve resettarlo
+
+    private void resetData() {
         annexedFiles=new AnnexedFiles();
         remotes=new Vector<Remote>();
     }
@@ -233,8 +246,7 @@ public class GitAnnexGUI extends JFrame {
         // TODO: fattorizzare, creare componenti (inner classes) Grep, OriginAnnex, Scripts
         // qui rimane solo costruzione JTable
         //
-        //initMenu(); // non serve piu'?
-        reset();
+        resetData();
         //
         JPanel settingsArea=new JPanel();
         settingsArea.setLayout(new GridLayout(2,1)); // sopra annex, sotto grep
@@ -243,7 +255,7 @@ public class GitAnnexGUI extends JFrame {
         add(settingsArea,BorderLayout.NORTH);
         //////////////////////////////////////////////////////////////////////////
         // FILE TABLE
-        annexedFilesTable=new JTable(this.new FilesModel());
+        annexedFilesTable=new JTable(fm=new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
         //annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
@@ -253,7 +265,7 @@ public class GitAnnexGUI extends JFrame {
             new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
             new JScrollPane(annexedFilesTable),
-            scriptsComponent
+            scriptsComponent=new Scripts()
         );
         //
         //tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
@@ -342,7 +354,7 @@ public class GitAnnexGUI extends JFrame {
 
     private void initFromAnnex() {
         //TODO: clessidra o progress bar...
-        reset();
+        resetData();
         // TODO: check if it is a git-annex!
         // list of files
         Command command=new Command(originComponent.getOrigin(),"git-annex list");
@@ -408,6 +420,7 @@ public class GitAnnexGUI extends JFrame {
         public AnnexedFile get(int index) {
             if(grepComponent.isEmpty()) return super.get(index);
 
+            //TODO: verificare bene funzionamento
             String txt=grepComponent.getText();
             //
             int i=0;
@@ -424,10 +437,6 @@ public class GitAnnexGUI extends JFrame {
 
             if(found)return super.get(i-1);
             else return super.get(i);
-        }
-
-        public int matching() {
-            return matching(grepComponent.getText());
         }
 
         public int matching(String grep) {
@@ -475,7 +484,9 @@ public class GitAnnexGUI extends JFrame {
         public boolean matches(String grep) {
             if(grep.length()==0) return true;
 
-            return toString().indexOf(grep)>0;
+            //return file.indexOf(grep)>=0;  //cosi' cerca solo nel nome del file e non nei tag!!!
+            return toString().indexOf(grep)>=0;  //cosi' in tutto
+            //TODO: verificare bene!!! ora sembra prendere anche cose che non dovrebbe
         }
 
 
@@ -636,7 +647,10 @@ public class GitAnnexGUI extends JFrame {
                 annexedFiles=(AnnexedFiles)in.readObject();
                 remotes=(Vector<Remote>)in.readObject();
                 System.err.println("loaded...");
-                fireTable();
+                //
+                //fireTable();
+                grepComponent.updateMatching();
+                //
                 return true; // se ha caricato
             }
         } catch(Exception e) {
@@ -757,21 +771,19 @@ class Command {
     public Vector<String> getErr() {
         return err;
     }
-
-
 }
 
 //TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
 
 //TODO: creare cache nominativa per repo?
 
-//TODO: c'e' iteratore solo sui selezionati???
+//DONE: c'e' iteratore solo sui selezionati??? NO
 
-//TODO: aggiungere campo numProgressivo
+//TODO: aggiungere campo numProgressivo?
 
 //TODO: json?!? solo se aumenta la velocita'
 
-//TODO: check null pointer??? (non salta piu' fuori)
+//DONE: check null pointer??? (non salta piu' fuori)
 
 //TODO: autodimensionamento colonne JTable
 
