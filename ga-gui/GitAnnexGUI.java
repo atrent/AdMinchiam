@@ -42,36 +42,131 @@ public class GitAnnexGUI extends JFrame {
     // NEW gui components
     private Grep grepComponent;
     class Grep extends JPanel {
+        private final static String LABEL="nr. of matches: ";
+        //
+        private JLabel numMatches;
+        public void setMatches(int m) {
+            numMatches.setText(LABEL+m);
+        }
+        public void setMatches(String m) {
+            numMatches.setText(LABEL+m);
+        }
+        private JTextField grep;
+        public String getText() {
+            return grep.getText();
+        }
+        public boolean isEmpty() {
+            return getText().length()==0;
+        }
 
-    }
-    private OriginAnnex originComponent;
-    class OriginAnnex extends JPanel {
-
-    }
-    private Scripts scriptsComponent;
-    class Scripts extends JPanel {
+        public Grep() {
+            setLayout(new BorderLayout());
+            //
+            numMatches=new JLabel();
+            setMatches("NA");
+            add(numMatches,BorderLayout.WEST);
+            //
+            grep=new JTextField();
+            add(grep,BorderLayout.CENTER);
+            grep.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    //System.err.println("matching: "+annexedFiles.matching());
+                    setMatches(annexedFiles.matching());
+                    fireTable();
+                }
+            });
+        }
 
     }
     //
+    public void setOrigin(String orig) {
+        originComponent.setOrigin(orig);
+    }
+    private OriginAnnex originComponent;
+    class OriginAnnex extends JPanel {
+        private JTextField origin;
+        //private JButton reload;//non serve accessibile
+        //
+        public OriginAnnex() {
+            setLayout(new BorderLayout());
+            // textfield nome file
+            origin=new JTextField();
+            add(origin,BorderLayout.CENTER);
+            origin.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    initFromAnnex();
+                }
+            });
+            // bottone reload
+            JButton reload = new JButton("Reload annex");
+            add(reload,BorderLayout.WEST);
+            reload.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    initFromAnnex();
+                }
+            });
+        }
+        public void setOrigin(String f) {
+            origin.setText(f);
+        }
+        public String getOrigin() {
+            return origin.getText();
+        }
+    }
+    //
+    private Scripts scriptsComponent;
+    class Scripts extends JPanel {
+        private JTextArea textScript;
+        public void setScript(String sc) {
+            textScript.setText(sc);
+        }
+        private JTextArea templateScript;
+        public String getTemplate() {
+            return templateScript.getText();
+        }
+        private JComboBox<File> scripts;
+        public String getSelected() {
+            return scripts.getSelectedItem().toString();
+        }
+        public Scripts() {
+            setLayout(new BorderLayout());//forse no
+            //
+            JButton gen = new JButton("Generate script from current template+selection");
+            add(gen,BorderLayout.SOUTH);
+            gen.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    generate();
+                }
+            });
+            //
+            textScript=new JTextArea("Generated script");
+            add(textScript,BorderLayout.CENTER);
+            //
+            templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
+            add(templateScript,BorderLayout.WEST);
+            //
+            scripts=new JComboBox<File>();
+            add(scripts,BorderLayout.NORTH);
+            scripts.addActionListener(new AbstractAction() {
+                public void actionPerformed(ActionEvent e) {
+                    //System.err.println("script: "+scripts.getSelectedItem());
+                    templateScript.setText(getScript());
+                }
+            });
+            File dir=new File(TEMPLATES_DIR);
+
+            if(dir.isDirectory()) {
+                for(File script: dir.listFiles()) {
+                    scripts.addItem(script);
+                }
+            } else throw new RuntimeException("missing templates dir!");
+        }
+
+    }
 
     // OLD gui components
     private JTable annexedFilesTable;         // TODO: fare celle editabili?
-    private JTextArea textScript;
-    private JTextArea templateScript;
-    private JTextField origin;
-    private JTextField grep;
-    private JTextField matchesNum;
-    private JComboBox<File> scripts;
 
-    public void setOrigin(String f) {
-        origin.setText(f);
-    }
-    public String getOrigin() {
-        if(origin!=null)
-            return origin.getText();
-        else
-            return "";
-    }
 
     /** TODO: ripensarla un po'?
      */
@@ -125,8 +220,7 @@ public class GitAnnexGUI extends JFrame {
         // annexedFilesTable.getColumnModel().getColumn(remotes.size()+2).setMinWidth(LASTCOLWIDTH);
     }
     private void reset() {
-        if(grep!=null) grep.setText("");
-
+        //grepComponent.reset(); //TODO: forse non serve resettarlo
         annexedFiles=new AnnexedFiles();
         remotes=new Vector<Remote>();
     }
@@ -135,79 +229,34 @@ public class GitAnnexGUI extends JFrame {
         super(MAIN_TITLE);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setExtendedState(MAXIMIZED_BOTH);
-        //originDir=f;
-        //setTitle(MAIN_TITLE+": "+originDir);
-        //
-        // TODO: fattorizzare, creare componenti (inner classes) Grep, OriginAnnex, Scripts
-        //
         //////////////////////////////////////////////////////////////////////////
-        initMenu();
+        // TODO: fattorizzare, creare componenti (inner classes) Grep, OriginAnnex, Scripts
+        // qui rimane solo costruzione JTable
         //
+        //initMenu(); // non serve piu'?
         reset();
         //
-        matchesNum=new JTextField("nr. of matches");
-        matchesNum.setEditable(false);
-        //
-        grep=new JTextField(/*"grepping text here (no matches with this string, change it!)"*/);
-        //add(grep,BorderLayout.NORTH);
-        grep.addActionListener(new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                //System.err.println("matching: "+annexedFiles.matching());
-                matchesNum.setText(annexedFiles.matching()+" matches");
-                //System.err.println("grep changed");
-                fireTable();
-            }
-        });
         JPanel settingsArea=new JPanel();
-        settingsArea.setLayout(new BorderLayout());
-        settingsArea.add(grep);
-        settingsArea.add(matchesNum,BorderLayout.WEST);
-        settingsArea.add(origin=new JTextField(),BorderLayout.NORTH);
-        origin.addActionListener(new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                initFromAnnex();
-            }
-        });
-        settingsArea.add(new JLabel("<<<=== insert grepping string"),BorderLayout.EAST);
+        settingsArea.setLayout(new GridLayout(2,1)); // sopra annex, sotto grep
+        settingsArea.add(grepComponent=new Grep());
+        settingsArea.add(originComponent=new OriginAnnex());
         add(settingsArea,BorderLayout.NORTH);
+        //////////////////////////////////////////////////////////////////////////
         // FILE TABLE
         annexedFilesTable=new JTable(this.new FilesModel());
         annexedFilesTable.setColumnSelectionAllowed(true);
-        //
         //annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         //
         //add(new JScrollPane(annexedFilesTable));
-        //
-        textScript=new JTextArea("Generated script");
-        //add(textScript,BorderLayout.EAST);
-        templateScript=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
-        //add(templateScript,BorderLayout.EAST);
-        // SCRIPT AREA
-        JPanel scriptArea=new JPanel();
-        scriptArea.setLayout(new BorderLayout());
-        scriptArea.add(templateScript);
-        scriptArea.add(scripts=new JComboBox<File>(),BorderLayout.NORTH);
-        scripts.addActionListener(new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                //System.err.println("script: "+scripts.getSelectedItem());
-                templateScript.setText(getScript());
-            }
-        });
-        fillScriptsCombo();
-        //
-        JScrollPane tbl;
         JSplitPane pane=
             new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
-            tbl=new JScrollPane(annexedFilesTable),
-            new JSplitPane(
-                JSplitPane.VERTICAL_SPLIT,
-                new JScrollPane(scriptArea),
-                new JScrollPane(textScript)
-            )
+            new JScrollPane(annexedFilesTable),
+            scriptsComponent
         );
-        tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
+        //
+        //tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
         add(pane);
         pane.setDividerLocation(800);
     }
@@ -216,7 +265,7 @@ public class GitAnnexGUI extends JFrame {
         try {
             byte[] encoded =
                 Files.readAllBytes(
-                    Paths.get(scripts.getSelectedItem().toString())
+                    Paths.get(scriptsComponent.getSelected())
                 );
             return new String(encoded);
         } catch(Exception e) {
@@ -226,72 +275,8 @@ public class GitAnnexGUI extends JFrame {
         return "dummy";
     }
 
-    private void fillScriptsCombo() {
-        File dir=new File(TEMPLATES_DIR);
-
-        if(dir.isDirectory()) {
-            for(File script: dir.listFiles()) {
-                scripts.addItem(script);
-            }
-        } else throw new RuntimeException("missing templates dir!");
+    private void _DELETE_fillScriptsCombo() {
     }
-
-    private void initMenu() {
-        JMenuBar menuBar = new JMenuBar();
-        setJMenuBar(menuBar);
-        /*
-        menuBar.add(new JMenu("prova1"));
-        menuBar.add(new JMenu("prova2"));
-        menuBar.add(new JMenu("prova3"));
-        */
-        //JMenu mnFile = new JMenu("Selections");
-        //menuBar.add(mnFile);
-        //
-        //JMenuItem gen = new JMenuItem("Generate");
-        JButton gen = new JButton("Generate script from current template+selection");
-        //mnFile.add(gen);
-        menuBar.add(gen);
-        gen.addActionListener(new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                generate();
-            }
-        });
-        //
-        //JMenuItem reload = new JMenuItem("Reload");
-        JButton reload = new JButton("Reload annex");
-        //mnFile.add(reload);
-        menuBar.add(reload);
-        reload.addActionListener(new AbstractAction() {
-            public void actionPerformed(ActionEvent e) {
-                initFromAnnex();
-            }
-        });
-        /*
-                JMenuItem mntmSel = new JMenuItem("prova select");
-                mnFile.add(mntmSel);
-                mntmSel.addActionListener(new AbstractAction() {
-                    public void actionPerformed(ActionEvent e) {
-                        provaSelect();
-                    }
-                });
-        */
-        //menuBar.add(new JToolBar());
-    }
-
-    /*
-        private void provaSelect() {
-            int colCount=annexedFilesTable.getColumnCount();
-            //ListSelectionModel model = annexedFilesTable.getSelectionModel();
-            //model.clearSelection();
-            for(int col=0; col<colCount; col++) {
-                //model.addSelectionInterval(col, col);
-                annexedFilesTable.setRowSelectionInterval(col, col);
-                annexedFilesTable.addRowSelectionInterval(col, col);
-                System.out.println(col);
-            }
-            annexedFilesTable.repaint();
-        }
-    */
 
     /** per ora assolutamente prove di generazione
      *
@@ -324,7 +309,7 @@ public class GitAnnexGUI extends JFrame {
                     if(af==null) throw new RuntimeException("annexed file not found!");
 
                     sb.append(
-                        MessageFormat.format(templateScript.getText(),
+                        MessageFormat.format(scriptsComponent.getTemplate(),
                                              remotes.get(col).getPath(),
                                              af.getFileName())
                     );
@@ -352,7 +337,7 @@ public class GitAnnexGUI extends JFrame {
             }
         }
 
-        textScript.setText(sb.toString());
+        scriptsComponent.setScript(sb.toString());
     }
 
     private void initFromAnnex() {
@@ -360,7 +345,7 @@ public class GitAnnexGUI extends JFrame {
         reset();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(getOrigin(),"git-annex list");
+        Command command=new Command(originComponent.getOrigin(),"git-annex list");
         command.start(); // bloccante
         //
         long starting=System.currentTimeMillis();
@@ -384,7 +369,7 @@ public class GitAnnexGUI extends JFrame {
         //
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(getOrigin(),"git-annex metadata");
+        command=new Command(originComponent.getOrigin(),"git-annex metadata");
         command.start();
         StringBuffer sb=new StringBuffer();
         int annexed=0;
@@ -404,30 +389,6 @@ public class GitAnnexGUI extends JFrame {
         fireTable();
     }
 
-    /**
-     * arg= path iniziale di un primo git-annex, gli altri li evince estraendo info dall'annex stesso
-     */
-    public static void main(String[] arg) throws Throwable {
-        if(arg.length!=1) {
-            System.err.println("Missing argument (git-annex path)!");
-            System.exit(1);
-        }
-
-        File f=new File(arg[0]);
-
-        if(!f.isDirectory()) {
-            System.err.println("Argument is not a dir!");
-            System.exit(2);
-        }
-
-        GitAnnexGUI mainWindow=new GitAnnexGUI();
-        mainWindow.setOrigin(arg[0]);
-        mainWindow.setVisible(true);
-
-        if(!mainWindow.loadStatus()) {
-            mainWindow.initFromAnnex();
-        }
-    }
 
     class AnnexedFiles extends Vector<AnnexedFile> implements Serializable {
 
@@ -445,13 +406,9 @@ public class GitAnnexGUI extends JFrame {
         /** devo filtrare solo i matching, restituisce l'indexesimo che matcha
          */
         public AnnexedFile get(int index) {
-            if(grep==null) return super.get(index);
+            if(grepComponent.isEmpty()) return super.get(index);
 
-            //
-            String txt=grep.getText();
-
-            if(txt.length()==0) return super.get(index);
-
+            String txt=grepComponent.getText();
             //
             int i=0;
             boolean found=false;
@@ -470,7 +427,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public int matching() {
-            return matching(grep.getText());
+            return matching(grepComponent.getText());
         }
 
         public int matching(String grep) {
@@ -644,7 +601,7 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public String getRemotePath(String remote) {
-            if(remote.equals("here")) return getOrigin();
+            if(remote.equals("here")) return originComponent.getOrigin();
 
             if(remote.equals("web")) return "web";
 
@@ -658,7 +615,7 @@ public class GitAnnexGUI extends JFrame {
                 sb.toString()
                 //"ls"
             };
-            Command command=new Command(getOrigin(),cmd);
+            Command command=new Command(originComponent.getOrigin(),cmd);
             command.start();
 
             if(command.getResult().size()>0)
@@ -675,7 +632,7 @@ public class GitAnnexGUI extends JFrame {
 
             if(status.isFile()) {
                 ObjectInputStream in=new ObjectInputStream(new FileInputStream(status));
-                setOrigin(in.readObject().toString());
+                originComponent.setOrigin(in.readObject().toString());
                 annexedFiles=(AnnexedFiles)in.readObject();
                 remotes=(Vector<Remote>)in.readObject();
                 System.err.println("loaded...");
@@ -694,7 +651,7 @@ public class GitAnnexGUI extends JFrame {
         try {
             File status=new File(SAVED_STATUS);
             ObjectOutputStream out=new ObjectOutputStream(new FileOutputStream(status));
-            out.writeObject(getOrigin());
+            out.writeObject(originComponent.getOrigin());
             out.writeObject(annexedFiles);
             out.writeObject(remotes);
             out.flush();
@@ -704,11 +661,36 @@ public class GitAnnexGUI extends JFrame {
             e.printStackTrace();
         }
     }
+    /**
+     * arg= path iniziale di un primo git-annex, gli altri li evince estraendo info dall'annex stesso
+     */
+    public static void main(String[] arg) throws Throwable {
+        if(arg.length!=1) {
+            System.err.println("Missing argument (git-annex path)!");
+            System.exit(1);
+        }
+
+        File f=new File(arg[0]);
+
+        if(!f.isDirectory()) {
+            System.err.println("Argument is not a dir!");
+            System.exit(2);
+        }
+
+        GitAnnexGUI mainWindow=new GitAnnexGUI();
+        mainWindow.setOrigin(arg[0]);
+        mainWindow.setVisible(true);
+
+        if(!mainWindow.loadStatus()) {
+            mainWindow.initFromAnnex();
+        }
+    }
 }
 
 
 
-
+/** utility class to spawn a command and read result
+ */
 class Command {
     private File wd;
     private String[] cmd;
