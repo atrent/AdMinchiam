@@ -10,8 +10,10 @@ import java.util.*;
 import java.text.*;
 
 /**
- * 	2015 - © Andrea Trentini (http://atrent.it) - Giovanni Biscuolo (http://xelera.eu)
- *
+	GitAnnexGUI: a git-annex helper
+
+   	2015 - © Andrea Trentini (http://atrent.it) - Giovanni Biscuolo (http://xelera.eu)
+
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
@@ -27,6 +29,28 @@ import java.text.*;
  */
 
 public class GitAnnexGUI extends JFrame {
+
+    //TODO: user doc
+
+    //TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
+
+    //TODO: creare cache nominativa per repo?
+
+    //TODO: aggiungere campo numProgressivo?
+
+    //TODO: json?!? solo se aumenta la velocita'
+
+    //TODO: autodimensionamento colonne JTable
+
+    //TODO: (jtable) cambiare componente?
+
+    //TODO: (opzionale) salva script con nome
+
+    //DONE: c'e' iteratore solo sui selezionati??? NO
+    //DONE: check null pointer??? (non salta piu' fuori)
+
+
+
     // constants
     public final static String MAIN_TITLE="GitAnnexGUI";
     public final static String TEMPLATES_DIR="ScriptTemplates";
@@ -37,12 +61,13 @@ public class GitAnnexGUI extends JFrame {
     private AnnexedFiles annexedFiles;
     private Vector<Remote> remotes;
 
+    ////////////////////////////////////////////////////////////////////////
     // NEW gui components
     FilesModel fm;
-    //
+    //===========================
     private Grep grepComponent;
     class Grep extends JPanel {
-        private final static String LABEL="   Nr. of items: ";
+        private final static String LABEL="   Nr. of items (grepped if textfield is not empty): ";
         //
         private JLabel numMatches;
         public void setMatches(int m) {
@@ -84,10 +109,11 @@ public class GitAnnexGUI extends JFrame {
         }
 
     }
-    //
+    //===========================
     public void setOrigin(String orig) {
         originComponent.setOrigin(orig);
     }
+    //===========================
     private OriginAnnex originComponent;
     class OriginAnnex extends JPanel {
         private JTextField origin;
@@ -119,7 +145,7 @@ public class GitAnnexGUI extends JFrame {
             return origin.getText();
         }
     }
-    //
+    //===========================
     private Scripts scriptsComponent;
     class Scripts extends JPanel {
         private JTextArea script;
@@ -250,8 +276,8 @@ public class GitAnnexGUI extends JFrame {
         //
         JPanel settingsArea=new JPanel();
         settingsArea.setLayout(new GridLayout(2,1)); // sopra annex, sotto grep
-        settingsArea.add(grepComponent=new Grep());
         settingsArea.add(originComponent=new OriginAnnex());
+        settingsArea.add(grepComponent=new Grep());
         add(settingsArea,BorderLayout.NORTH);
         //////////////////////////////////////////////////////////////////////////
         // FILE TABLE
@@ -415,28 +441,28 @@ public class GitAnnexGUI extends JFrame {
         }
 
 
-        /** devo filtrare solo i matching, restituisce l'indexesimo che matcha
+        /** devo filtrare solo i matching, restituisce l'indexesimo tra quelli che matchano
          */
         public AnnexedFile get(int index) {
-            if(grepComponent.isEmpty()) return super.get(index);
+            if(grepComponent.isEmpty()) return super.get(index);  // trasparente se non c'e' grep
 
-            //TODO: verificare bene funzionamento
+            //TODO: !!! verificare bene funzionamento, al momento restituisce cose di troppo e/o sbagliate (cfr, TAXONOMY) !!!
             String txt=grepComponent.getText();
             //
             int i=0;
-            boolean found=false;
+            //boolean found=false;
 
-            while(index>=0 && i<size()) {
+            while(index>0 && i<size()) {
                 if(super.get(i).matches(txt)) {
                     index--;
-                    found=true;
+                    //found=true;
+            return super.get(i);
                 }
 
                 i++;
             }
 
-            if(found)return super.get(i-1);
-            else return super.get(i);
+            //TODO: se non lo trova???
         }
 
         public int matching(String grep) {
@@ -454,6 +480,8 @@ public class GitAnnexGUI extends JFrame {
     /** un singolo file annexed, con la mappa dei remote su cui e' (o si vorrebbe metterlo)
      */
     class AnnexedFile implements Serializable {
+        //TODO: velocizzare oggetto, cacheando le stringhe
+        //
         private String file;
         private char[] remotes; // TODO: a parte 'X' decidere una semantica
         private Hashtable<String,String> metadata;
@@ -482,11 +510,20 @@ public class GitAnnexGUI extends JFrame {
         }
 
         public boolean matches(String grep) {
-            if(grep.length()==0) return true;
+            if(grep.length()==0 || grep==null) return true;
+
+            String all=getNameAndMeta();
+
+            //TODO: verificare bene!!! ora sembra prendere anche cose che non dovrebbe
+            //cosi' in tutto (senza remotes)
+            if(all.indexOf(grep)>=0) {
+                //System.err.println(all);
+                return true;
+            }
 
             //return file.indexOf(grep)>=0;  //cosi' cerca solo nel nome del file e non nei tag!!!
-            return toString().indexOf(grep)>=0;  //cosi' in tutto
-            //TODO: verificare bene!!! ora sembra prendere anche cose che non dovrebbe
+            //return toString().indexOf(grep)>=0;  //cosi' in tutto (compresi remotes)
+            return false;
         }
 
 
@@ -514,26 +551,6 @@ public class GitAnnexGUI extends JFrame {
                 }
             }
         }
-
-
-        /** invoke as late as possible, costly!!! */
-        /*
-        public void _initMeta() {
-            if(metadata.size()!=0) return;
-
-            Command c=new Command(originDir,"git-annex metadata "+file);
-            c.start();
-            for(String meta: c.getResult()) {
-                //System.err.println("meta: "+meta);
-                if(meta.indexOf("=")>0) {
-                    String[] split=meta.split("=");
-                    //System.err.println(split[0]+","+split[1]);
-                    metadata.put(split[0],split[1]);
-                }
-            }
-
-        }
-        */
 
         public String getFileName() {
             return file;
@@ -565,12 +582,12 @@ public class GitAnnexGUI extends JFrame {
             return sb.toString();
         }
 
-        public String nameAndMeta() {
+        public String getNameAndMeta() {
             StringBuilder sb=new StringBuilder();
             sb.append(file);
-            sb.append("[");
+            //sb.append("[");
             sb.append(getAllMeta());
-            sb.append("]");
+            //sb.append("]");
             return sb.toString();
         }
     }
@@ -772,21 +789,3 @@ class Command {
         return err;
     }
 }
-
-//TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
-
-//TODO: creare cache nominativa per repo?
-
-//DONE: c'e' iteratore solo sui selezionati??? NO
-
-//TODO: aggiungere campo numProgressivo?
-
-//TODO: json?!? solo se aumenta la velocita'
-
-//DONE: check null pointer??? (non salta piu' fuori)
-
-//TODO: autodimensionamento colonne JTable
-
-//TODO: (jtable) cambiare componente?
-
-//TODO: (opzionale) salva script con nome
