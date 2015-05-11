@@ -325,11 +325,11 @@ public class GitAnnexGUI extends JFrame {
         boolean flagged=false;
 
         for(int row=0; row<rowCount; row++) {
-            for(int col=1; col<colCount-3; col++) {
+            for(int col=1; col<colCount-2; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
                     // prendi nome
                     String name=annexedFilesTable.getValueAt(row, colCount-2).toString();
-                    //System.err.println("name: "+name);
+                    System.err.println("name: "+name);
                     // prendi annexed, cerca nome in vector
                     AnnexedFile af=null;
                     int index=0;
@@ -344,23 +344,10 @@ public class GitAnnexGUI extends JFrame {
 
                     sb.append(
                         MessageFormat.format(scriptsComponent.getTemplate(),
-                                             remotes.get(col).getPath(),
+                                             remotes.get(col-1).getPath(), // c'e' il nr.progressivo!!!
                                              af.getFileName(),
                                              row+1)
                     );
-                    /* OLD, statico
-                    //sb.append(annexedFilesTable.getValueAt(row, col));
-                    sb.append("cd ");
-                    sb.append(remotes.get(col).getPath());
-                    sb.append("\n");
-                    sb.append("git-annex get ");
-                    sb.append(annexedFilesTable.getValueAt(row,colCount-1));
-                    sb.append("\n");
-                    //sb.append(",c:");
-                    //sb.append(col);
-                    //sb.append("=");
-                    //sb.append(annexedFilesTable.isCellSelected(row, col));
-                    */
                     sb.append("\n");
                     flagged=true;
                 }
