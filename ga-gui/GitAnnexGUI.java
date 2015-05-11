@@ -30,6 +30,11 @@ import java.text.*;
 
 public class GitAnnexGUI extends JFrame {
 
+	///////////////////////////////////////////////////////
+	//TODO: come mai la splitbar ad un certo punto si blocca?
+    //TODO: autodimensionamento colonne JTable
+    //TODO: (jtable) cambiare componente?
+
     //TODO: user doc
 
     //TODO: priorita' speed!!! e il collo di bottiglia e' git-annex command
@@ -38,18 +43,15 @@ public class GitAnnexGUI extends JFrame {
 
     //TODO: json?!? solo se aumenta la velocita'
 
-    //TODO: autodimensionamento colonne JTable
-
-    //TODO: (jtable) cambiare componente?
-
     //TODO: (opzionale) salva script con nome
-
+	///////////////////////////////////////////////////////
     //DONE: c'e' iteratore solo sui selezionati??? NO
     //DONE: check null pointer??? (non salta piu' fuori)
     //DONE: aggiungere campo numProgressivo?
+	///////////////////////////////////////////////////////
 
     // constants
-    public final static String MAIN_TITLE="GitAnnexGUI";
+    public final static String MAIN_TITLE="GitAnnexGUI (GPL, beta version) - 2015© Andrea Trentini (http://atrent.it) & Giovanni Biscuolo (http://xelera.eu)";
     public final static String TEMPLATES_DIR="ScriptTemplates";
     public final static String SAVED_STATUS="saved.status";
     public final static int LASTCOLWIDTH=300;
@@ -329,7 +331,7 @@ public class GitAnnexGUI extends JFrame {
                 if(annexedFilesTable.isCellSelected(row, col)) {
                     // prendi nome
                     String name=annexedFilesTable.getValueAt(row, colCount-2).toString();
-                    System.err.println("name: "+name);
+                    //System.err.println("name: "+name);
                     // prendi annexed, cerca nome in vector
                     AnnexedFile af=null;
                     int index=0;
