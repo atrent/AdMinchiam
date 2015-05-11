@@ -31,8 +31,6 @@ import java.text.*;
 public class GitAnnexGUI extends JFrame {
 
     ///////////////////////////////////////////////////////
-    //TODO: come mai la splitbar ad un certo punto si blocca?
-    //TODO: autodimensionamento colonne JTable
     //TODO: (jtable) cambiare componente?
 
     //TODO: user doc
@@ -45,9 +43,11 @@ public class GitAnnexGUI extends JFrame {
 
     //TODO: (opzionale) salva script con nome
     ///////////////////////////////////////////////////////
+    //DONE: autodimensionamento colonne JTable
     //DONE: c'e' iteratore solo sui selezionati??? NO
     //DONE: check null pointer??? (non salta piu' fuori)
     //DONE: aggiungere campo numProgressivo?
+    //DONE: come mai la splitbar ad un certo punto si blocca? era il borderlayout di destra, aggiunti gli scrollpane ora a posto
     ///////////////////////////////////////////////////////
 
     // constants
@@ -256,9 +256,12 @@ public class GitAnnexGUI extends JFrame {
         if(fm!=null) {
             fm.fireTableDataChanged();
             fm.fireTableStructureChanged();
+            /*
             TableColumnModel m=annexedFilesTable.getColumnModel();
             m.getColumn(fm.getColumnCount()-1).setMinWidth(LASTCOLWIDTH);
             m.getColumn(fm.getColumnCount()-2).setMinWidth(LASTCOLWIDTH);
+            */
+            resizeColumnWidth();
             grepComponent.setMatches(annexedFiles.size());
         }
     }
@@ -288,6 +291,7 @@ public class GitAnnexGUI extends JFrame {
         annexedFilesTable.setColumnSelectionAllowed(true);
         //annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_ALL_COLUMNS);
         annexedFilesTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        annexedFilesTable.getTableHeader().setReorderingAllowed(false);
         JSplitPane pane=
             new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
@@ -298,6 +302,22 @@ public class GitAnnexGUI extends JFrame {
         //tbl.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS); // TODO: non fa quello che dico! appare ma non scrolla horiz
         add(pane);
         pane.setDividerLocation(800);
+    }
+
+    private void resizeColumnWidth() {
+        TableColumnModel columnModel = annexedFilesTable.getColumnModel();
+
+        for (int column = 0; column < annexedFilesTable.getColumnCount(); column++) {
+            int width = 50; // Min width
+
+            for (int row = 0; row < annexedFilesTable.getRowCount(); row++) {
+                TableCellRenderer renderer = annexedFilesTable.getCellRenderer(row, column);
+                Component comp = annexedFilesTable.prepareRenderer(renderer, row, column);
+                width = Math.max(comp.getPreferredSize().width, width);
+            }
+
+            columnModel.getColumn(column).setPreferredWidth(width);
+        }
     }
 
     private String getScript() {
@@ -327,6 +347,7 @@ public class GitAnnexGUI extends JFrame {
         boolean flagged=false;
 
         for(int row=0; row<rowCount; row++) {
+            //TODO: se voglio lasciare che si possano spostare le colonne bisogna fare il for su tutte ed evitare le colonne File, Counter e Meta
             for(int col=1; col<colCount-2; col++) {
                 if(annexedFilesTable.isCellSelected(row, col)) {
                     // prendi nome
@@ -369,7 +390,7 @@ public class GitAnnexGUI extends JFrame {
         resetData();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(this,originComponent.getOrigin(),"git-annex list");
+        Command command=new Command(this,originComponent.getOrigin(),"git-annex list --allrepos");
         command.start(); // bloccante...
         //
         long starting=System.currentTimeMillis();
@@ -797,7 +818,8 @@ class Command { /*extends Thread*/
                 //monit.setProgress(p++);
             }
 
-            System.err.print("end: "+Arrays.toString(cmd));
+            //System.err.print("end: "+Arrays.toString(cmd));
+            System.err.print("end: "+cmd[0]);
             System.err.println(", time (ms): "+(System.currentTimeMillis()-starting) );
         } catch(Exception e) {
             e.printStackTrace();
