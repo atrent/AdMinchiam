@@ -1,10 +1,8 @@
-===========
-GitAnnexGUI
+# GitAnnexGUI
 
 sort-of-GUI for git-annex
 
-----
-IDEA
+## IDEA
 
 * have a map of all the files
 * tag them
