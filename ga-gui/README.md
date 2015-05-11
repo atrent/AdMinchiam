@@ -19,6 +19,9 @@ sort-of-GUI for git-annex
 * generate the script
 * copy&paste the script wherever you want
 
+See [screenshot](http://github.com/atrent/AdMinchiam/blob/master/ga-gui/Screenshots/GitAnnexGUI_020.png)
+
+
 ### Parameters in script templates
 
 * {0} is remote
