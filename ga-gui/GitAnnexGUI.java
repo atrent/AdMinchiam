@@ -30,8 +30,8 @@ import java.text.*;
 
 public class GitAnnexGUI extends JFrame {
 
-	///////////////////////////////////////////////////////
-	//TODO: come mai la splitbar ad un certo punto si blocca?
+    ///////////////////////////////////////////////////////
+    //TODO: come mai la splitbar ad un certo punto si blocca?
     //TODO: autodimensionamento colonne JTable
     //TODO: (jtable) cambiare componente?
 
@@ -44,11 +44,11 @@ public class GitAnnexGUI extends JFrame {
     //TODO: json?!? solo se aumenta la velocita'
 
     //TODO: (opzionale) salva script con nome
-	///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
     //DONE: c'e' iteratore solo sui selezionati??? NO
     //DONE: check null pointer??? (non salta piu' fuori)
     //DONE: aggiungere campo numProgressivo?
-	///////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////
 
     // constants
     public final static String MAIN_TITLE="GitAnnexGUI (GPL, beta version) - 2015© Andrea Trentini (http://atrent.it) & Giovanni Biscuolo (http://xelera.eu)";
@@ -66,14 +66,14 @@ public class GitAnnexGUI extends JFrame {
     //===========================
     private Grep grepComponent;
     class Grep extends JPanel {
-        private final static String LABEL="   Nr. of items (grepped if textfield is not empty): ";
+        private final static String LABEL=" items, grepped if textfield is not empty => ";
         //
         private JLabel numMatches;
         public void setMatches(int m) {
             setMatches(Integer.toString(m));
         }
         public void setMatches(String m) {
-            numMatches.setText(LABEL+m+"   ");
+            numMatches.setText("   "+m+LABEL);
         }
         private JTextField grep;
         public String getText() {
@@ -167,11 +167,11 @@ public class GitAnnexGUI extends JFrame {
             //
             script=new JTextArea("Generated script");
             //script.setBorder(BorderFactory.createLineBorder(Color.black));
-            add(script/*,BorderLayout.CENTER*/);
+            add(new JScrollPane(script)/*,BorderLayout.CENTER*/);
             //
             template=new JTextArea("##########\n#{0} is remote\n#{1} is filename\ncd {0}\ngit-annex get {1}\n##########\n");
             template.setBorder(BorderFactory.createLineBorder(Color.black));
-            add(template,BorderLayout.EAST);
+            add(new JScrollPane(template),BorderLayout.EAST);
             //
             scripts=new JComboBox<File>();
             add(scripts,BorderLayout.SOUTH);

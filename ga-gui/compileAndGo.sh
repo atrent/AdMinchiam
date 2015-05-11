@@ -1,7 +1,9 @@
 #!/bin/bash
-clear
-astyle -xe -f -A2 *java
 
+clear
+rm *class
+
+astyle -xe -f -A2 *java
 sloccount *java
 
 echo === COMPILING...
