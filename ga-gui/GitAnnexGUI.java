@@ -31,6 +31,8 @@ import java.text.*;
 public class GitAnnexGUI extends JFrame {
 
     ///////////////////////////////////////////////////////
+    //TODO: --allrepos o no?
+    
     //TODO: (jtable) cambiare componente?
 
     //TODO: user doc
