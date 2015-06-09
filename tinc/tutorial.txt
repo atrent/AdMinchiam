@@ -1,0 +1,6 @@
+Note di setup di una rete Tinc-vpn
+
+
+perche' http://www.tinc-vpn.org/documentation/ non e' proprio sempre esaustivo...
+
+
