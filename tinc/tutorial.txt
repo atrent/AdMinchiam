@@ -1,6 +1,46 @@
 Note di setup di una rete Tinc-vpn
 
-
 perche' http://www.tinc-vpn.org/documentation/ non e' proprio sempre esaustivo...
 
+E POI NELLA VERSIONE 1.1 si potra' fare di molto meglio
 
+cfr. https://www.digitalocean.com/community/tutorials/how-to-install-tinc-and-set-up-a-basic-vpn-on-ubuntu-14-04
+
+
+- mkdir -p /etc/tinc/<netname>/hosts
+
+- creare /etc/tinc/<netname>/tinc.conf   (configurazione di QUESTO nodo)
+
+	esempio:
+	
+	Name = <QUESTO NODO>
+	AddressFamily = ipv4
+	Interface = tun169  (attenzione al naming dei tun?!? solo numerico!?!)
+
+	#ConnectTo = darkstar
+	Mode = switch
+	#GraphDumpFile = /etc/tinc/atrent/rete
+	#LocalDiscovery = yes
+
+- creare /etc/tinc/<netname>/hosts/<QUESTO NODO> (parte pubblica)
+
+	esempio:
+	#Address = <public_IP>    ???
+	#Subnet = 192.168.169.0/24     range di indirizzi della rete "gestita" da questo nodo
+	(niente se si usa Mode=switch)
+
+- creare chiavi
+
+	esempio:
+	tincd -n <netname> -K4096 (crea la priv e mette in ./hosts/<QUESTO NODO> la pub)
+
+- creare tinc-up e tinc-down (con autoipd o con IP statico) CHMOD!!!
+
+- scambiare chiavi pubbliche, attenzione ai nomi dei file
+
+- ricordarsi di aggiungere <netname> tin /etc/nets.boot
+
+
+- attenzione al NetworkManager!!! interferisce con i tun, bisogna editare /etc/network/interfaces e mettere un manual al tun scelto, esempio:
+
+	iface tun169 inet manual
