@@ -44,3 +44,27 @@ cfr. https://www.digitalocean.com/community/tutorials/how-to-install-tinc-and-se
 - attenzione al NetworkManager!!! interferisce con i tun, bisogna editare /etc/network/interfaces e mettere un manual al tun scelto, esempio:
 
 	iface tun169 inet manual
+
+
+
+
+NOTA BENE PER DHCP
+
+- ovviamente no avahi
+
+- il server dhcp deve avere indirizzo fisso (tipicamente .1)
+
+- mettere i dhclient in background con "&" in tinc-up del client
+
+- dato che se no sminchia routes, mettere:
+	dhclient -v -e IF_METRIC=1000 $INTERFACE &
+	(cioe' impostare metric sulla netcard in modo che non sia in alto, deve costare di piu')
+	(1000 o piu')
+
+
+
+
+NOTA BENE per Android
+
+seguire http://tinc_gui.poirsouille.org/
+
