@@ -68,3 +68,20 @@ NOTA BENE per Android
 
 seguire http://tinc_gui.poirsouille.org/
 
+
+
+
+
+NOTA BENE considerazioni a valle di un po' di test
+
+- usare lo stesso certificato/chiave per piu' reti porta a rendere difficile il debug perche' il client si connette (avendo certificato ok) ma poi non quadra la config di rete (a me e' capitato fra pub e priv che hanno due modi di assegnare ip diversi)
+
+- non e' banale gestire le chiavi pubbliche, e' facilissimo dimenticarsi di propagarle
+
+- e' facile confondersi quando si hanno piu' reti perche' si differenziano solo per porte
+
+- si puo' gestire la nomenclatura delle reti .local? (forse configurazione avahi, non tinc)
+
+- migliorare gestione metriche (vedi sopra)
+
+- chiarire semantica di Port in tinc.conf versus hosts/<hostname>
