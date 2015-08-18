@@ -43,7 +43,7 @@ public class GitAnnexGUI extends JFrame {
 
     //TODO: json?!? solo se aumenta la velocita'
 
-    //TODO: (opzionale) salva script con nome
+    //TODO: (opzionale, non urgente) salva script con nome
     ///////////////////////////////////////////////////////
     //DONE: autodimensionamento colonne JTable
     //DONE: c'e' iteratore solo sui selezionati??? NO
@@ -111,9 +111,11 @@ public class GitAnnexGUI extends JFrame {
     private OriginAnnex originComponent;
     class OriginAnnex extends JPanel {
         private JTextField origin;
+        private JTextField options;
         //private JButton reload;//non serve accessibile
         //
         public OriginAnnex() {
+            //TODO: passare a gridlayout
             setLayout(new BorderLayout());
             // textfield nome file
             origin=new JTextField();
@@ -123,8 +125,11 @@ public class GitAnnexGUI extends JFrame {
                     initFromAnnex();
                 }
             });
+            // options (to git-annex)  TODO: attenzione che va in arrayoutofbound (perche' il nr tot di item non e' filtrato)
+            options=new JTextField("   # options to git-annex                            ");
+            add(options,BorderLayout.EAST);
             // bottone reload
-            JButton reload = new JButton("Reload annex");
+            JButton reload = new JButton("Reload annex (NOTE: it could be SLOW!)");
             add(reload,BorderLayout.WEST);
             reload.addActionListener(new AbstractAction() {
                 public void actionPerformed(ActionEvent e) {
@@ -137,6 +142,9 @@ public class GitAnnexGUI extends JFrame {
         }
         public String getOrigin() {
             return origin.getText();
+        }
+        public String getOptions() {
+            return options.getText();
         }
     }
     //===========================
@@ -392,7 +400,7 @@ public class GitAnnexGUI extends JFrame {
         resetData();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(this,originComponent.getOrigin(),"git-annex list --allrepos");
+        Command command=new Command(this,originComponent.getOrigin(),"git-annex list --allrepos "+originComponent.getOptions());
         command.start(); // bloccante...
         //
         long starting=System.currentTimeMillis();
@@ -411,12 +419,12 @@ public class GitAnnexGUI extends JFrame {
             }
         }
 
-        //
+        // TODO: ripensare options (e forse ripensare al wrapper dei dati dell'annex...
         System.err.println("tempo di parsing dei file:"+(System.currentTimeMillis()-starting));
         //
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(this,originComponent.getOrigin(),"git-annex metadata");
+        command=new Command(this,originComponent.getOrigin(),"git-annex metadata "+originComponent.getOptions());
         command.start(); // bloccante...
         StringBuffer sb=new StringBuffer();
         int annexed=0;
@@ -437,6 +445,8 @@ public class GitAnnexGUI extends JFrame {
     }
 
 
+    /** gruppo di file annexed
+     */
     class AnnexedFiles /*extends Vector<AnnexedFile>*/ implements Serializable,Iterable<AnnexedFile> {
         private Vector<AnnexedFile> complete;
         private Vector<AnnexedFile> filtered;
@@ -594,9 +604,16 @@ public class GitAnnexGUI extends JFrame {
         /** si inizializza direttamente dalla stringa di git annex list
          */
         public AnnexedFile(String annexItem) {
-            String[] st=annexItem.split(" ");
+            String[] st=annexItem.split(" "); // DONE: problema spazi nei filenames...
             remotes=st[0].toCharArray();
-            file=st[1];
+            // prendere il resto degli st (perche' ci potrebbero essere spazi)
+            StringBuilder sb=new StringBuilder();
+
+            for(int i=1; i<st.length; i++) {
+                sb.append(st[i]);
+            }
+
+            file=sb.toString();
             metadata=new Hashtable<String,String>();
         }
 
@@ -665,7 +682,7 @@ public class GitAnnexGUI extends JFrame {
             StringBuilder sb=new StringBuilder();
             sb.append("git remote -v |grep '");
             sb.append(remote);
-            sb.append("'|cut -f2 |cut -f1 -d' '|sort|uniq");
+            sb.append("'|cut -f2 |cut -f1 -d' '|sort|uniq"); // TODO: problema spazi nei filenames...
             String[] cmd = {
                 "/bin/bash",
                 "-c",

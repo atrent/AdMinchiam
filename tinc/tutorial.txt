@@ -85,3 +85,35 @@ NOTA BENE considerazioni a valle di un po' di test
 - migliorare gestione metriche (vedi sopra)
 
 - chiarire semantica di Port in tinc.conf versus hosts/<hostname>
+
+
+
+
+
+
+
+
+
+naming problem!!!
+
+
+vedi stefano vs. serverone
+
+gli host si registrano su avahi col proprio hostname e non vengono visti col nome della chiave
+
+
+
+
+
+
+
+
+
+
+
+
++newmulo
++zen
++vps
+
+darkstar
