@@ -113,7 +113,7 @@ public class GitAnnexGUI extends JFrame {
     private OriginAnnex originComponent;
     class OriginAnnex extends JPanel {
         private JTextField origin;
-        private JTextField options;
+        //private JTextField options; // mi sa che non funziona
         //private JButton reload;//non serve accessibile
         //
         public OriginAnnex() {
@@ -129,9 +129,8 @@ public class GitAnnexGUI extends JFrame {
             });
             // options (to git-annex)  TODO: attenzione che va in arrayoutofbound (perche' il nr tot di item non e' filtrato)
             //options=new JTextField("  # --allrepos ? # edit to set options to git-annex                            ");
-            options=new JTextField("#######################################");
-            
-            add(options,BorderLayout.EAST);
+            //options=new JTextField("#######################################");
+            //add(options,BorderLayout.EAST);
             // bottone reload
             JButton reload = new JButton("Reload annex (NOTE: it could be SLOW!)");
             add(reload,BorderLayout.WEST);
@@ -147,9 +146,11 @@ public class GitAnnexGUI extends JFrame {
         public String getOrigin() {
             return origin.getText();
         }
+        /*
         public String getOptions() {
             return options.getText();
         }
+        */
     }
     //===========================
     private Scripts scriptsComponent;
@@ -404,7 +405,7 @@ public class GitAnnexGUI extends JFrame {
         resetData();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(this,originComponent.getOrigin(),"git-annex list "+originComponent.getOptions());
+        Command command=new Command(this,originComponent.getOrigin(),"git-annex list "/*+originComponent.getOptions()*/);
         command.start(); // bloccante...
         //
         long starting=System.currentTimeMillis();
@@ -428,7 +429,7 @@ public class GitAnnexGUI extends JFrame {
         //
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(this,originComponent.getOrigin(),"git-annex metadata "+originComponent.getOptions());
+        command=new Command(this,originComponent.getOrigin(),"git-annex metadata "/*+originComponent.getOptions()*/);
         command.start(); // bloccante...
         StringBuffer sb=new StringBuffer();
         int annexed=0;
