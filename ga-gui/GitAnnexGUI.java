@@ -32,7 +32,7 @@ public class GitAnnexGUI extends JFrame {
 
     ///////////////////////////////////////////////////////
     //TODO: --allrepos o no?
-    
+
     //TODO: size of file
 
     //TODO: (jtable) cambiare componente?
@@ -128,7 +128,7 @@ public class GitAnnexGUI extends JFrame {
                 }
             });
             // options (to git-annex)  TODO: attenzione che va in arrayoutofbound (perche' il nr tot di item non e' filtrato)
-            options=new JTextField("  --allrepos  # edit to set options to git-annex                            ");
+            options=new JTextField("  #--allrepos ? # edit to set options to git-annex                            ");
             add(options,BorderLayout.EAST);
             // bottone reload
             JButton reload = new JButton("Reload annex (NOTE: it could be SLOW!)");
@@ -771,7 +771,7 @@ public class GitAnnexGUI extends JFrame {
 /** utility class to spawn a command and read result
  */
 class Command { /*extends Thread*/
-    private File wd;
+    private File wd; // working directory
     private String[] cmd;
     private Vector<String> result;
     private Vector<String> err;
@@ -809,7 +809,7 @@ class Command { /*extends Thread*/
             else
                 process=Runtime.getRuntime().exec(cmd,null,wd);
 
-            System.err.println("start: "+Arrays.toString(cmd));
+            System.err.println("start: "+Arrays.toString(cmd)+" in "+wd);
             long starting=System.currentTimeMillis();
             String line="";
             BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
