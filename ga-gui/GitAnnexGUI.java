@@ -128,7 +128,9 @@ public class GitAnnexGUI extends JFrame {
                 }
             });
             // options (to git-annex)  TODO: attenzione che va in arrayoutofbound (perche' il nr tot di item non e' filtrato)
-            options=new JTextField("  #--allrepos ? # edit to set options to git-annex                            ");
+            //options=new JTextField("  # --allrepos ? # edit to set options to git-annex                            ");
+            options=new JTextField("#######################################");
+            
             add(options,BorderLayout.EAST);
             // bottone reload
             JButton reload = new JButton("Reload annex (NOTE: it could be SLOW!)");
