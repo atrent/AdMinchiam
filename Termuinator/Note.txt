@@ -1,0 +1,13 @@
+- ventola/e comandata/e da Arduino (motor shield o rele')
+- sensore temp/humid
+- wifi
+- lettore SD (config e log)
+
+
+
+
+Link interessanti
+
+http://nodemcu.com  - Wifi embedded on arduino o esp8266
+
+http://www.piccolino.rocks - arduino + oled + sd + wifi
