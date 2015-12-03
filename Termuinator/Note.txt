@@ -11,3 +11,20 @@ Link interessanti
 http://nodemcu.com  - Wifi embedded on arduino o esp8266
 
 http://www.piccolino.rocks - arduino + oled + sd + wifi
+
+
+
+
+ESP8266
+
+funziona a 115200, n81
+
+attenzione all'enter (cr+lf)
+
+e alla piedinatura (working mode)
+
+http://iot-playground.com/2-uncategorised/38-esp8266-and-arduino-ide-blink-example
+http://www.whatimade.today/esp8266-easiest-way-to-program-so-far/
+
+mem check fail
+https://startpage.com/do/search?query=esp8266+MEM+CHECK+FAIL!!!&cat=web&pl=chrome&language=english_uk
