@@ -1,14 +1,75 @@
-TERMUINATOR
+=== TERMUINATOR
+
+Hardware (alcuni opzionali)
 
 - ventola/e comandata/e da Arduino (motor shield o rele')
 - sensore temp/humid
-- wifi
+- wifi (es. esp8266)
 - lettore SD (config e log)
+- arduino/[CHIP]   (i nodi semplici possono essere anche Arduino based, quelli piu' complessi no)
+- display OLED o simili
+- sensore luminosita'
+- luce o meglio...
+- ...presa 220V comandata
+- RTC o meglio un get time da qualche parte o anche meglio NTP sketch
+
+
+
+=== Cosa si puo' fare con una roba ultramicro?
+
+Es. ESP8266
+
+wifi connection (anche AP volendo)
 
 
 
 
-Link interessanti
+=== Funzioni
+
+- "efficientamento" dei termosifoni mediante flusso aria contro gli elementi
+
+- controllo bluetooth delle termovalvole (se CHIP che ha BLE e avendo valvole BLE e se si riesce a rev.eng. il protocollo)
+
+- riduce contabilizzazione calorie (si puo' dire o no?)
+
+- eventuale umidificazione aria
+
+- rete mesh (?) (dipende da architettura che usiamo, se Arduino no, se CHIP si')
+
+- "prolunga wifi" (extender)
+
+- cloud minimale?
+
+- raccolta dati su temp/humid su server centrale con produzione grafici etc.
+
+- log e config su sd
+
+- allarme presenza
+
+- telesorveglianza con telecamere (?) (quindi serve centralina per zoneminder/etc.)
+
+- c'e' luce?
+
+
+=== Use cases
+
+Configurazione iniziale
+- sd letta inizialmente (al boot/accensione) per importare una config da piazzare in NAND (o simili)
+
+Programmazione giornaliera/settimanale/etc.
+- profilo su file di testo
+
+Modo vacanza (funzione allarme?)
+- per quanti giorni, etc.
+
+
+
+
+
+
+
+
+=== Link interessanti
 
 http://nodemcu.com  - Wifi embedded on arduino o esp8266
 
@@ -21,7 +82,7 @@ ESP8266
 
 funziona a 115200, n81
 
-attenzione all'enter (cr+lf)
+attenzione all'enter (cr+lf!!!)
 
 e alla piedinatura (working mode)
 
