@@ -1,3 +1,5 @@
+TERMUINATOR
+
 - ventola/e comandata/e da Arduino (motor shield o rele')
 - sensore temp/humid
 - wifi
