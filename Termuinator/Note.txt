@@ -50,6 +50,12 @@ wifi connection (anche AP volendo)
 
 - c'e' luce?
 
+- diffusione musica (e avvisi)
+
+- se piccolo display show avvisi importanti sullo stato della casa
+
+- monitoraggio audio (baby monitor, anziani)
+
 
 === Use cases
 
