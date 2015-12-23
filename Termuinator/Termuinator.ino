@@ -26,17 +26,31 @@ DHT dht(DHTPIN, DHTTYPE);
 
 SoftwareSerial mySerial(10, 11); // RX, TX
 
-char temp[5];
+char temp[5]; // per conversione itoa, TODO: piu' piccolo?
 
+int tempSoglia;  // da leggere da SD
+
+int isteresi; // da leggere da SD
+
+// TODO: lib per file INI
+
+// TODO: leggere da SD
+
+// TODO: modalita' comando/logger
 
 void setup() {
   Serial.begin(9600);
-  Serial.println("DHTxx test!");
+  Serial.println("logger...");
 
   mySerial.begin(9600);
-  mySerial.println("Inizio log");
+  //mySerial.println("Inizio log");
 
   dht.begin();
+
+  //goComando();
+  mySerial.print("read TERMU.INI");
+  mySerial.write(13);
+
 }
 
 void loop() {
@@ -63,7 +77,7 @@ void loop() {
   float hic = dht.computeHeatIndex(t, h, false);
 
 
-  mySerial.println(itoa(t,temp,10));
+  //mySerial.println(itoa(t,temp,10));
 
 
   Serial.print("Humidity: ");
@@ -79,4 +93,42 @@ void loop() {
   Serial.print(" *C ");
   Serial.print(hif);
   Serial.println(" *F");
+
+
+
+/*
+  mySerial.print("ls");
+  mySerial.write(13);
+  output();
+*/
+  
+  //mySerial.print("read TERMU.INI");
+  //mySerial.write(13);
+  output();
+
+  //Serial.println(".pre-ls.");
+  //Serial.print(mySerial.read());
 }
+
+
+//TODO: funzioncina 'command'
+
+void output(){  
+  while(mySerial.available()){
+	//Serial.print(".in-ls.");
+	Serial.print((char)mySerial.read());
+	//delay(10);
+  }
+}
+
+
+
+/*
+void goComando(){
+  mySerial.write(26);
+  mySerial.write(26);
+  mySerial.write(26);
+  delay(1000);
+  mySerial.write(13);
+}
+*/

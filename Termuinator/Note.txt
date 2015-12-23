@@ -2,18 +2,17 @@
 
 Hardware (alcuni opzionali)
 
-- ventola/e comandata/e da Arduino (motor shield o rele')
-- sensore temp/humid
-- wifi (es. esp8266)
-- lettore SD (config e log)
+* ventola/e comandata/e da Arduino (motor shield o rele' [se usiamo uno shield, altrimenti mosfet o transistor attaccato direttamente a GPIO])
+* sensore temp/humid
+- wifi (es. esp8266) [attendiamo USB socket per programmarlo]
+* lettore SD (config e log)
 - arduino/[CHIP]   (i nodi semplici possono essere anche Arduino based, quelli piu' complessi no)
-- display OLED o simili
+- [NO su esp8266, mancano pin i/o] display OLED o simili
 - sensore luminosita'
 - luce o meglio...
 - ...presa 220V comandata
 - RTC o meglio un get time da qualche parte o anche meglio NTP sketch
-
-
+- home-assistant.io compliance!!!
 
 === Cosa si puo' fare con una roba ultramicro?
 
@@ -21,41 +20,38 @@ Es. ESP8266
 
 wifi connection (anche AP volendo)
 
+ci serve:
+- 1 pin per motore (solo on/off, niente pwm)
+- 2 pin per rx/tx con SD (openlog adafruit)
+- 1 pin per sensore DHT
+
+CI SIAMO!!!
+
+=== Funzioni GLOBBALI (non solo Termuinator)
+
+ATTENZIONE: queste funzioni potrebbero essere delegate a singoli moduletti ESP8266 o simili, extra Termuinator, a meno di non avere un meccanismo di gathering (es. un arduino "slave" che legga una serie di sensori e crei una "stringa" di dati) dei dati 
+
+Per ogni ESP si possono usare fino a DUE sensori/attuatori digitali/pwm, oltre DUE bisogna avere piu' ESP
+
+	[log e config su sd (backup) usano TX/RX dell'ESP]
 
 
-
-=== Funzioni
-
-- "efficientamento" dei termosifoni mediante flusso aria contro gli elementi
-
-- controllo bluetooth delle termovalvole (se CHIP che ha BLE e avendo valvole BLE e se si riesce a rev.eng. il protocollo)
-
-- riduce contabilizzazione calorie (si puo' dire o no?)
-
-- eventuale umidificazione aria
-
-- rete mesh (?) (dipende da architettura che usiamo, se Arduino no, se CHIP si')
-
-- "prolunga wifi" (extender)
-
-- cloud minimale?
-
-- raccolta dati su temp/humid su server centrale con produzione grafici etc.
-
-- log e config su sd
-
-- allarme presenza
-
-- telesorveglianza con telecamere (?) (quindi serve centralina per zoneminder/etc.)
-
+* "efficientamento" dei termosifoni mediante flusso aria contro gli elementi
+	- riduce contabilizzazione calorie (si puo' dire o no?)
 - c'e' luce?
+- diffusione avvisi sonori
+- umidificazione aria
+- allarme presenza (PIR sensor)
 
-- diffusione musica (e avvisi)
+- [NO esp8266!] controllo bluetooth delle termovalvole (se CHIP che ha BLE e avendo valvole BLE e se si riesce a rev.eng. il protocollo)
+- [NO esp8266!] rete mesh (???) (dipende da architettura che usiamo, se Arduino no, se CHIP si')
+- "prolunga wifi" (extender) (???)
+- [home-assistant.io] raccolta dati su temp/humid su server centrale con produzione grafici etc.
+- [NO esp8266!] se piccolo display show avvisi importanti sullo stato della casa
+- [NO esp8266!] monitoraggio audio (baby monitor, anziani)
 
-- se piccolo display show avvisi importanti sullo stato della casa
-
-- monitoraggio audio (baby monitor, anziani)
-
+- <del>telesorveglianza con telecamere (?) (quindi serve centralina per zoneminder/etc.)</del>
+- <del>cloud minimale? (???)</del>
 
 === Use cases
 
@@ -69,22 +65,16 @@ Modo vacanza (funzione allarme?)
 - per quanti giorni, etc.
 
 
-
-
-
-
-
-
 === Link interessanti
 
 http://nodemcu.com  - Wifi embedded on arduino o esp8266
 
 http://www.piccolino.rocks - arduino + oled + sd + wifi
 
+https://home-assistant.io/
 
 
-
-ESP8266
+=== ESP8266
 
 funziona a 115200, n81
 
@@ -97,3 +87,14 @@ http://www.whatimade.today/esp8266-easiest-way-to-program-so-far/
 
 mem check fail
 https://startpage.com/do/search?query=esp8266+MEM+CHECK+FAIL!!!&cat=web&pl=chrome&language=english_uk
+
+
+
+=== TODO
+
+- lib INI
+
+- lib PIR
+
+- imparare a programmare esp
+- lib wifi
