@@ -13,18 +13,24 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */ 
+ */
+//////////////////////////////////////////////////////////////////////////////
+
+
+
 
 // Openlog (SD) https://www.sparkfun.com/products/9530
 // PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht
 
+//#include <IniFile.h>
 #include <SoftwareSerial.h>
 #include "DHT.h"
 
 #define DHTPIN 2     // what digital pin we're connected to
 #define PIRPIN 4
 #define LEDPIN 13
+#define SEPA ','
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11   // DHT 11
@@ -44,113 +50,147 @@
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
 
-SoftwareSerial mySerial(10, 11); // RX, TX
 
+/*
+ * parametri config (nel file TERMU.INI)
+ * 1) ssid  //forse anche metodo (WPA/etc.)?
+ * 2) pwdWifi
+ * 3) tempSoglia
+ * 4) finestraIsteresi
+ */
+String ssid;
+String pwdWifi;
+int tempSoglia=25;
+int finestraIsteresi=2;
+
+SoftwareSerial mySerial(10, 11); // RX, TX
 char temp[5]; // per conversione itoa, TODO: piu' piccolo?
 
-int tempSoglia;  // da leggere da SD
-
-int isteresi; // da leggere da SD
-
 // TODO: lib per file INI
-
 // TODO: leggere da SD
-
 // TODO: modalita' comando/logger
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("logger...");
+    Serial.begin(9600);
+    Serial.println("Booting...");
 
-  pinMode(PIRPIN, INPUT_PULLUP);
-  pinMode(LEDPIN, OUTPUT);
+    pinMode(PIRPIN, INPUT_PULLUP);
+    pinMode(LEDPIN, OUTPUT);
 
-  mySerial.begin(9600);
-  //mySerial.println("Inizio log");
+    mySerial.begin(9600);
+    //mySerial.println("Inizio log");
 
-  dht.begin();
+    dht.begin();
 
-  //goComando();
-  mySerial.print("read TERMU.INI");
-  mySerial.write(13);
-
+    readConfig();
 }
 
 void loop() {
-  // Wait a few seconds between measurements.
-  delay(2000);
+    // Wait a few seconds between measurements.
+    delay(1000);
 
-  // Reading temperature or humidity takes about 250 milliseconds!
-  // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-  float h = dht.readHumidity();
-  // Read temperature as Celsius (the default)
-  float t = dht.readTemperature();
-  // Read temperature as Fahrenheit (isFahrenheit = true)
-  float f = dht.readTemperature(true);
+    // Reading temperature or humidity takes about 250 milliseconds!
+    // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
+    float h = dht.readHumidity();
+    // Read temperature as Celsius (the default)
+    float t = dht.readTemperature();
+    // Read temperature as Fahrenheit (isFahrenheit = true)
+    float f = dht.readTemperature(true);
 
-  // Check if any reads failed and exit early (to try again).
-  if (isnan(h) || isnan(t) || isnan(f)) {
-    Serial.println("Failed to read from DHT sensor!");
-    return;
-  }
+    // Check if any reads failed and exit early (to try again).
+    if (isnan(h) || isnan(t) || isnan(f)) {
+        Serial.println("Failed to read from DHT sensor!");
+        return;
+    }
 
-  // Compute heat index in Fahrenheit (the default)
-  float hif = dht.computeHeatIndex(f, h);
-  // Compute heat index in Celsius (isFahreheit = false)
-  float hic = dht.computeHeatIndex(t, h, false);
-
-
-  //mySerial.println(itoa(t,temp,10));
+    // Compute heat index in Fahrenheit (the default)
+    float hif = dht.computeHeatIndex(f, h);
+    // Compute heat index in Celsius (isFahreheit = false)
+    float hic = dht.computeHeatIndex(t, h, false);
 
 
-  Serial.print("Humidity: ");
-  Serial.print(h);
-  Serial.print("%, ");
-  Serial.print("Temperature: ");
-  Serial.print(t);
-  Serial.print("C/");
-  Serial.print(f);
-  Serial.print("F, ");
-  Serial.print("Heat index: ");
-  Serial.print(hic);
-  Serial.print("C/");
-  Serial.print(hif);
-  Serial.print("F, ");
-  Serial.print("PIR:");
-  Serial.println(!digitalRead(PIRPIN));
-
-  if(!digitalRead(PIRPIN))
-	digitalWrite(LEDPIN,HIGH);
-  else
-	digitalWrite(LEDPIN,LOW);
+    //mySerial.println(itoa(t,temp,10));
 
 
-/*
-  mySerial.print("ls");
-  mySerial.write(13);
-  output();
-*/
-  
-  //mySerial.print("read TERMU.INI");
-  //mySerial.write(13);
-  output();
+    Serial.print("SSID: ");
+    Serial.print(ssid);
+    Serial.print(", PWD: ");
+    Serial.print(pwdWifi);
+    Serial.print(", TEMPSOGLIA: ");
+    Serial.print(tempSoglia);
+    Serial.print(", ISTERESI: ");
+    Serial.print(finestraIsteresi);
+    Serial.print(", Humidity: ");
+    Serial.print(h);
+    Serial.print("%, ");
+    Serial.print("Temperature: ");
+    Serial.print(t);
+    Serial.print("C/");
+    Serial.print(f);
+    Serial.print("F, ");
+    Serial.print("Heat index: ");
+    Serial.print(hic);
+    Serial.print("C/");
+    Serial.print(hif);
+    Serial.print("F, ");
+    Serial.print("PIR:");
+    Serial.println(!digitalRead(PIRPIN));
 
-  //Serial.println(".pre-ls.");
-  //Serial.print(mySerial.read());
+    if(t>tempSoglia)
+        digitalWrite(LEDPIN,HIGH);
+
+    if(t<=(tempSoglia-finestraIsteresi))
+        digitalWrite(LEDPIN,LOW);
+
+
+    /*
+      mySerial.print("ls");
+      mySerial.write(13);
+      output();
+    */
+
+    //mySerial.print("read TERMU.INI");
+    //mySerial.write(13);
+
+    //readSDandPrint();
+
+    //Serial.println(".pre-ls.");
+    //Serial.print(mySerial.read());
 }
 
 
 //TODO: funzioncina 'command'
 
-void output(){  
-  while(mySerial.available()){
-	//Serial.print(".in-ls.");
-	Serial.print((char)mySerial.read());
-	//delay(10);
-  }
+String readSD() {
+    //Serial.println("in readSD");
+    String out="";
+    while(mySerial.available()) {
+        //Serial.println("in while");
+        char carattere=(char)mySerial.read();
+
+        if(carattere==SEPA) break;
+        if(carattere=='\n') break;
+
+        //Serial.print(carattere);
+        out.concat(carattere);
+        delay(10);
+    }
+    return out;
 }
 
+void readConfig() {
+    //Serial.println("in readConfig");
+    //goComando();
+    mySerial.print("read TERMU.INI");
+    mySerial.write(13);
+    delay(100);
 
+    readSD();
+    ssid=readSD();
+    pwdWifi=readSD();
+    tempSoglia=readSD().toInt();
+    finestraIsteresi=readSD().toInt();
+}
 
 /*
 void goComando(){
@@ -161,3 +201,13 @@ void goComando(){
   mySerial.write(13);
 }
 */
+
+
+
+void readSDandPrint() {
+    while(mySerial.available()) {
+        Serial.print((char)mySerial.read());
+        delay(10);
+    }
+
+}
