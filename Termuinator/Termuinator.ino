@@ -16,12 +16,13 @@
  */
 //////////////////////////////////////////////////////////////////////////////
 
+// TODO: board per unire ESP+SDlogger+DHT
 
-
-
-// Openlog (SD) https://www.sparkfun.com/products/9530
+// Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
 // PIR: https://www.sparkfun.com/products/13285
-// DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht
+// DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
+
+// MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
 
 //#include <IniFile.h>
 #include <SoftwareSerial.h>
@@ -50,7 +51,6 @@
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
 
-
 /*
  * parametri config (nel file TERMU.INI)
  * 1) ssid  //forse anche metodo (WPA/etc.)?
@@ -64,11 +64,9 @@ int tempSoglia=25;
 int finestraIsteresi=2;
 
 SoftwareSerial mySerial(10, 11); // RX, TX
-char temp[5]; // per conversione itoa, TODO: piu' piccolo?
 
-// TODO: lib per file INI
-// TODO: leggere da SD
-// TODO: modalita' comando/logger
+//char temp[5]; // per conversione itoa
+
 
 void setup() {
     Serial.begin(9600);
@@ -108,9 +106,7 @@ void loop() {
     // Compute heat index in Celsius (isFahreheit = false)
     float hic = dht.computeHeatIndex(t, h, false);
 
-
     //mySerial.println(itoa(t,temp,10));
-
 
     Serial.print("SSID: ");
     Serial.print(ssid);
@@ -142,7 +138,6 @@ void loop() {
     if(t<=(tempSoglia-finestraIsteresi))
         digitalWrite(LEDPIN,LOW);
 
-
     /*
       mySerial.print("ls");
       mySerial.write(13);
@@ -157,9 +152,6 @@ void loop() {
     //Serial.println(".pre-ls.");
     //Serial.print(mySerial.read());
 }
-
-
-//TODO: funzioncina 'command'
 
 String readSD() {
     //Serial.println("in readSD");
@@ -192,22 +184,21 @@ void readConfig() {
     finestraIsteresi=readSD().toInt();
 }
 
-/*
-void goComando(){
-  mySerial.write(26);
-  mySerial.write(26);
-  mySerial.write(26);
-  delay(1000);
-  mySerial.write(13);
+// TODO: modalita' comando/logger  (in futuro per loggare eventi e misure)
+// TODO: funzioncina 'command'
+void goComando() {
+    mySerial.write(26);
+    mySerial.write(26);
+    mySerial.write(26);
+    delay(1000);
+    mySerial.write(13);
 }
-*/
 
-
-
+/*
 void readSDandPrint() {
     while(mySerial.available()) {
         Serial.print((char)mySerial.read());
         delay(10);
     }
-
 }
+*/
