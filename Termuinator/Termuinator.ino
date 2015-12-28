@@ -22,13 +22,15 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-// TODO: board per unire ESP+SDlogger+DHT
+// TODO: board per unire ESP+SDlogger+DHT+mosfet
 
 // Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
 // PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
+
+// TODO: compatibilita' MQTT
 
 //#include <IniFile.h>
 #include <SoftwareSerial.h>
