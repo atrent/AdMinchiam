@@ -16,6 +16,12 @@
  */
 //////////////////////////////////////////////////////////////////////////////
 
+/*
+ * devices:
+ * 1) attuatore efficientatore (original Termuinator!)
+ * 2) rilevatore temperatura+presenza (con PIR) (*)
+ */
+
 // TODO: board per unire ESP+SDlogger+DHT
 
 // Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
@@ -53,11 +59,13 @@ DHT dht(DHTPIN, DHTTYPE);
 
 /*
  * parametri config (nel file TERMU.INI)
- * 1) ssid  //forse anche metodo (WPA/etc.)?
- * 2) pwdWifi
- * 3) tempSoglia
- * 4) finestraIsteresi
+ * 1) nomeNodo
+ * 2) ssid  //forse anche metodo (WPA/etc.)?
+ * 3) pwdWifi
+ * 4) tempSoglia
+ * 5) finestraIsteresi
  */
+String nomeNodo;
 String ssid;
 String pwdWifi;
 int tempSoglia=25;
@@ -108,7 +116,9 @@ void loop() {
 
     //mySerial.println(itoa(t,temp,10));
 
-    Serial.print("SSID: ");
+    Serial.print("NODE: ");
+    Serial.print(nomeNodo);
+    Serial.print(", SSID: ");
     Serial.print(ssid);
     Serial.print(", PWD: ");
     Serial.print(pwdWifi);
@@ -132,7 +142,7 @@ void loop() {
     Serial.print("PIR:");
     Serial.println(!digitalRead(PIRPIN));
 
-    if(t>tempSoglia)
+    if(t>=tempSoglia)
         digitalWrite(LEDPIN,HIGH);
 
     if(t<=(tempSoglia-finestraIsteresi))
@@ -178,6 +188,8 @@ void readConfig() {
     delay(100);
 
     readSD();
+    // TODO: aggiungere una modalita' di funzionamento? forse no, programma separato (*)
+    nomeNodo=readSD();
     ssid=readSD();
     pwdWifi=readSD();
     tempSoglia=readSD().toInt();
