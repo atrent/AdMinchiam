@@ -1,10 +1,30 @@
-// Example testing sketch for various DHT humidity/temperature sensors
-// Written by ladyada, public domain
+/*
+	Termuinator - Biscuolo,Trentini © 2015
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */ 
+
+// Openlog (SD) https://www.sparkfun.com/products/9530
+// PIR: https://www.sparkfun.com/products/13285
+// DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht
 
 #include <SoftwareSerial.h>
 #include "DHT.h"
 
 #define DHTPIN 2     // what digital pin we're connected to
+#define PIRPIN 4
+#define LEDPIN 13
 
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11   // DHT 11
@@ -41,6 +61,9 @@ int isteresi; // da leggere da SD
 void setup() {
   Serial.begin(9600);
   Serial.println("logger...");
+
+  pinMode(PIRPIN, INPUT_PULLUP);
+  pinMode(LEDPIN, OUTPUT);
 
   mySerial.begin(9600);
   //mySerial.println("Inizio log");
@@ -82,18 +105,24 @@ void loop() {
 
   Serial.print("Humidity: ");
   Serial.print(h);
-  Serial.print(" %\t");
+  Serial.print("%, ");
   Serial.print("Temperature: ");
   Serial.print(t);
-  Serial.print(" *C ");
+  Serial.print("C/");
   Serial.print(f);
-  Serial.print(" *F\t");
+  Serial.print("F, ");
   Serial.print("Heat index: ");
   Serial.print(hic);
-  Serial.print(" *C ");
+  Serial.print("C/");
   Serial.print(hif);
-  Serial.println(" *F");
+  Serial.print("F, ");
+  Serial.print("PIR:");
+  Serial.println(!digitalRead(PIRPIN));
 
+  if(!digitalRead(PIRPIN))
+	digitalWrite(LEDPIN,HIGH);
+  else
+	digitalWrite(LEDPIN,LOW);
 
 
 /*
