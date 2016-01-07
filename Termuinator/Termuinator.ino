@@ -46,7 +46,6 @@ static byte mymac[] = { 0x70,0x69,0x69,0x2D,0x30,0x33 };
 /* TCP/IP send/receive buffer */
 byte Ethernet::buffer[500];
 #define ETHERCARD_ICMP 1
-
 //////////////////////////////////////////////////
 
 /* Including Strip-led libraries */
@@ -79,8 +78,8 @@ DHT dht(DHTPIN, DHTTYPE);
 //const unsigned int led=7;
 
 /* Setup strip-led stuff */
-uint8_t dataPin = 2; // Yellow wire, on Adafruit-WS2801
-uint8_t clockPin = 3; // Green wire, on Adafruit-WS2801
+const uint8_t dataPin = 2; // Yellow wire, on Adafruit-WS2801
+const uint8_t clockPin = 3; // Green wire, on Adafruit-WS2801
 
 // nr. of LEDs
 const int length = 17;
@@ -98,8 +97,6 @@ uint32_t Color(byte r, byte g, byte b) {
     c |= b;
     return c;
 }
-
-
 
 /*
  * parametri config (nel file TERMU.INI)
@@ -126,12 +123,11 @@ void rispondi(
     uint16_t src_port,    ///< Port the packet was sent from
     const char *data,   ///< UDP payload data
     uint16_t len)        ///< Length of the payload data
-    {
+{
 
     // DEBUG ...
     Serial.println("Received UDP packet.");
 }
-
 
 void setup() {
     Serial.begin(57600);
@@ -146,7 +142,7 @@ void setup() {
     dht.begin();
 
 
-	// sempre per SD
+    // sempre per SD
     //readConfig();
 
     /* Setup ledstrip stuff ... */
@@ -173,7 +169,7 @@ void setup() {
 }
 
 void loop() {
-	ether.packetLoop(ether.packetReceive());
+    ether.packetLoop(ether.packetReceive());
 
     // Wait a few seconds between measurements.
     delay(500);
