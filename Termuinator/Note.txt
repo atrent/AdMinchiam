@@ -2,11 +2,11 @@
 
 Hardware (alcuni opzionali)
 
-* ventola/e (220V cosi' risparmiamo un alimentatore!!!) comandata/e da Arduino (motor shield o rele' [se usiamo uno shield, altrimenti mosfet o transistor attaccato direttamente a GPIO])
+* ventola/e (220V cosi' risparmiamo un alimentatore!!! o 12V che costano meno) comandata/e da Arduino (motor shield o rele' [se usiamo uno shield, altrimenti mosfet o transistor attaccato direttamente a GPIO])
 * sensore temp/humid
 - wifi (es. esp8266) [attendiamo USB socket per programmarlo]
-* lettore SD (config e log)
 - OLIMEX ESP8266-EVB!!! o arduino/[CHIP]   (i nodi semplici possono essere anche Arduino based, quelli piu' complessi no)
+- [NO config via seriale... lettore SD (config e log)]
 - [NO su esp8266, mancano pin i/o] display OLED o simili
 - sensore luminosita'
 - luce o meglio...
@@ -15,7 +15,8 @@ Hardware (alcuni opzionali)
 - home-assistant.io compliance!!!
 - power supply switching
 - PIR
-- LED RGB per notifiche
+* LED RGB per notifiche
+* DB9 per console
 
 === Cosa si puo' fare con una roba ultramicro?
 
