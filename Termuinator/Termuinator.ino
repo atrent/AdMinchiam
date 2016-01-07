@@ -36,7 +36,24 @@
 #include <SoftwareSerial.h>
 #include "DHT.h"
 
-#define DHTPIN 2     // what digital pin we're connected to
+////a regime altra lib////////////////////////////
+/* Including ENC28J60 libraries */
+#include <EtherCard.h>
+#include <IPAddress.h>
+/* LAN-unique MAC address for ENC28J60 controller */
+static byte mymac[] = { 0x70,0x69,0x69,0x2D,0x30,0x33 };
+
+/* TCP/IP send/receive buffer */
+byte Ethernet::buffer[500];
+#define ETHERCARD_ICMP 1
+
+//////////////////////////////////////////////////
+
+/* Including Strip-led libraries */
+#include <SPI.h>
+#include <Adafruit_WS2801.h>
+
+#define DHTPIN 5     // what digital pin we're connected to
 #define PIRPIN 4
 #define LEDPIN 13
 #define SEPA ','
@@ -59,6 +76,31 @@
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
 
+//const unsigned int led=7;
+
+/* Setup strip-led stuff */
+uint8_t dataPin = 2; // Yellow wire, on Adafruit-WS2801
+uint8_t clockPin = 3; // Green wire, on Adafruit-WS2801
+
+// nr. of LEDs
+const int length = 17;
+
+// config
+Adafruit_WS2801 strip = Adafruit_WS2801(length, dataPin, clockPin);
+
+/* This function return a 24bit color value from parameters r, g and b */
+uint32_t Color(byte r, byte g, byte b) {
+    uint32_t c;
+    c = r;
+    c <<= 8;
+    c |= g;
+    c <<= 8;
+    c |= b;
+    return c;
+}
+
+
+
 /*
  * parametri config (nel file TERMU.INI)
  * 1) nomeNodo
@@ -73,29 +115,68 @@ String pwdWifi;
 int tempSoglia=25;
 int finestraIsteresi=2;
 
-SoftwareSerial mySerial(10, 11); // RX, TX
+// rompe alla ethercard, ci serviva per SD
+//SoftwareSerial mySerial(10, 11); // RX, TX
 
 //char temp[5]; // per conversione itoa
 
+void rispondi(
+    uint16_t dest_port,    ///< Port the packet was sent to
+    uint8_t src_ip[4],    ///< IP address of the sender
+    uint16_t src_port,    ///< Port the packet was sent from
+    const char *data,   ///< UDP payload data
+    uint16_t len)        ///< Length of the payload data
+    {
+
+    // DEBUG ...
+    Serial.println("Received UDP packet.");
+}
+
 
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(57600);
     Serial.println("Booting...");
 
     pinMode(PIRPIN, INPUT_PULLUP);
     pinMode(LEDPIN, OUTPUT);
 
-    mySerial.begin(9600);
+    //mySerial.begin(9600);
     //mySerial.println("Inizio log");
 
     dht.begin();
 
-    readConfig();
+
+	// sempre per SD
+    //readConfig();
+
+    /* Setup ledstrip stuff ... */
+    strip.begin();
+    strip.show();
+    colorWipe(Color(0, 0, 0), 1);
+
+// attenzione che se non e' collegata la ethernet aspetta un casino
+    if (ether.begin(sizeof Ethernet::buffer, mymac) == 0)
+        Serial.println( "Failed to access Ethernet controller");
+
+    if (!ether.dhcpSetup()) {
+        Serial.println("DHCP failed");
+        // set fixed 192.168.10.10
+        //ether.staticSetup({192,168,10,10},...,...);
+    }
+
+    ether.printIp("IP:  ", ether.myip);
+    ether.printIp("GW:  ", ether.gwip);
+    ether.printIp("DNS: ", ether.dnsip);
+
+    /* ... and register udptoStripled() to port 57600 */
+    ether.udpServerListenOnPort(&rispondi, 57600);
 }
 
 void loop() {
+	ether.packetLoop(ether.packetReceive());
+
     // Wait a few seconds between measurements.
-    delay(1000);
+    delay(500);
 
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -144,6 +225,10 @@ void loop() {
     Serial.print("PIR:");
     Serial.println(!digitalRead(PIRPIN));
 
+
+    strip.setPixelColor(t-15, Wheel(200*t)); // BUG R-B
+    strip.show();
+
     if(t>=tempSoglia)
         digitalWrite(LEDPIN,HIGH);
 
@@ -165,6 +250,8 @@ void loop() {
     //Serial.print(mySerial.read());
 }
 
+
+/*
 String readSD() {
     //Serial.println("in readSD");
     String out="";
@@ -208,7 +295,6 @@ void goComando() {
     mySerial.write(13);
 }
 
-/*
 void readSDandPrint() {
     while(mySerial.available()) {
         Serial.print((char)mySerial.read());
@@ -216,3 +302,34 @@ void readSDandPrint() {
     }
 }
 */
+
+
+//Input a value 0 to 255 to get a color value.
+//The colours are a transition r - g -b - back to r
+uint32_t Wheel(byte WheelPos)
+{
+    if (WheelPos < 85) {
+        return Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+    } else if (WheelPos < 170) {
+        WheelPos -= 85;
+        return Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    } else {
+        WheelPos -= 170;
+        return Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    }
+}
+
+
+// fill the dots one after the other with said color
+// good for testing purposes
+void colorWipe(uint32_t c, uint8_t wait) {
+    int i;
+
+    for (i=0; i < strip.numPixels(); i++) {
+        strip.setPixelColor(i, c);
+        strip.show();
+        delay(wait);
+    }
+}
+
+
