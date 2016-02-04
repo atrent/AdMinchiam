@@ -18,6 +18,9 @@
 
 // per ArduinoIDE ricordarsi https://www.olimex.com/Products/IoT/ESP8266-EVB/resources/ESP8266-EVB-how-to-use-Arduino.pdf
 
+// per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
+
+
 /*
  * devices:
  * 1) attuatore efficientatore (original Termuinator!)
@@ -55,7 +58,8 @@
 //#define DHTTYPE DHT21   // DHT 21 (AM2301)
 ////////////////////////////////////////////////////////
 //#define DHTPIN 0     // ESP OK in parallelo col bottone
-#define DHTPIN 12     // ESP OK corrisponde a 7 su connettore UEXT
+//#define DHTPIN 12     // ESP OK corrisponde a 7 su connettore UEXT
+#define DHTPIN 4     // ...
 //#define DHTPIN 16     // riprovo gpio16, corrisponde a pin 13, NON FUNZIONA con DHT, pero' il LED funzia
 ////////////////////////////////////////////////////////
 // Connect pin 1 (on the left) of the sensor to +5V
@@ -80,15 +84,13 @@ DHT dht(DHTPIN, DHTTYPE);
  * 5) finestraIsteresi
  */
 
-/*
+// variabili perche' dovranno essere configurabili a runtime
 String nomeNodo;
 String ssid;
 String pwdWifi;
-*/
-
-// variabili perche' dovranno essere configurabili a runtime
 int tempSoglia=26;
 int finestraIsteresi=2;
+float h,t,f,hif,hic;
 
 //////////////////////////////////////////
 void setup() {
@@ -110,7 +112,6 @@ void setup() {
 
 //////////////////////////////////////////
 void blinkLed(int i){
-        delay(50);
         digitalWrite(i,HIGH);
         delay(50);
         digitalWrite(i,LOW);
@@ -118,27 +119,15 @@ void blinkLed(int i){
 
 //////////////////////////////////////////
 void loop() {
-    blinkLed(LEDPIN);
-
-/*
-  Wire.beginTransmission(11); // transmit to device #44 (0x2c)
-  // device address is specified in datasheet
-  Wire.write(byte(0x00));            // sends instruction byte
-  Wire.write(0x0);
-  Wire.write(0x0);
-  Wire.write(0x255);
-  Wire.endTransmission();     // stop transmitting
-*/
-
-    delay(1000);
+    blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-    float h = dht.readHumidity();
+    h = dht.readHumidity();
     // Read temperature as Celsius (the default)
-    float t = dht.readTemperature();
+    t = dht.readTemperature();
     // Read temperature as Fahrenheit (isFahrenheit = true)
-    float f = dht.readTemperature(true);
+    f = dht.readTemperature(true);
 
     // Check if any reads failed and exit early (to try again).
     if (isnan(h) || isnan(t) || isnan(f)) {
@@ -147,13 +136,37 @@ void loop() {
     }
 
     // Compute heat index in Fahrenheit (the default)
-    float hif = dht.computeHeatIndex(f, h);
+    hif = dht.computeHeatIndex(f, h);
     // Compute heat index in Celsius (isFahreheit = false)
-    float hic = dht.computeHeatIndex(t, h, false);
+    hic = dht.computeHeatIndex(t, h, false);
 
-    //mySerial.println(itoa(t,temp,10));
+	printStatus();
 
-    Serial.print("NODE: ");
+    if(t>=tempSoglia)
+        digitalWrite(RELAY,HIGH);
+
+    if(t<=(tempSoglia-finestraIsteresi))
+        digitalWrite(RELAY,LOW);
+
+    /*
+      mySerial.print("ls");
+      mySerial.write(13);
+      output();
+    */
+
+    //mySerial.print("read TERMU.INI");
+    //mySerial.write(13);
+
+
+    //Serial.println(".pre-ls.");
+    //Serial.print(mySerial.read());
+
+    delay(500);
+}
+
+
+void printStatus(){
+	    Serial.print("NODE: ");
     Serial.print(nomeNodo);
     Serial.print(", SSID: ");
     Serial.print(ssid);
@@ -176,26 +189,4 @@ void loop() {
     Serial.print("C/");
     Serial.print(hif);
     Serial.println("F, ");
-
-    if(t>=tempSoglia)
-        digitalWrite(LEDPIN,HIGH);
-
-    if(t<=(tempSoglia-finestraIsteresi))
-        digitalWrite(LEDPIN,LOW);
-
-
-
-    /*
-      mySerial.print("ls");
-      mySerial.write(13);
-      output();
-    */
-
-    //mySerial.print("read TERMU.INI");
-    //mySerial.write(13);
-
-    //readSDandPrint();
-
-    //Serial.println(".pre-ls.");
-    //Serial.print(mySerial.read());
 }
