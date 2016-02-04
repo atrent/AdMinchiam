@@ -87,16 +87,6 @@ const int length = 17;
 // config
 Adafruit_WS2801 strip = Adafruit_WS2801(length, dataPin, clockPin);
 
-/* This function return a 24bit color value from parameters r, g and b */
-uint32_t Color(byte r, byte g, byte b) {
-    uint32_t c;
-    c = r;
-    c <<= 8;
-    c |= g;
-    c <<= 8;
-    c |= b;
-    return c;
-}
 
 /*
  * parametri config (nel file TERMU.INI)
@@ -330,3 +320,19 @@ void colorWipe(uint32_t c, uint8_t wait) {
 }
 
 
+
+/* This function return a 24bit color value from parameters r, g and b */
+uint32_t Color(byte r, byte g, byte b) {
+    uint32_t c;
+    c = r;
+    c <<= 8;
+    c |= g;
+    c <<= 8;
+    c |= b;
+    return c;
+}
+
+
+
+
+void prova(){}
