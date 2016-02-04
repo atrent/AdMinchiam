@@ -151,6 +151,7 @@ void setup() {
     colorWipe(Color(0, 0, 0), 1);
 
 // attenzione che se non e' collegata la ethernet aspetta un casino
+/*
     if (ether.begin(sizeof Ethernet::buffer, mymac) == 0)
         Serial.println( "Failed to access Ethernet controller");
 
@@ -163,13 +164,13 @@ void setup() {
     ether.printIp("IP:  ", ether.myip);
     ether.printIp("GW:  ", ether.gwip);
     ether.printIp("DNS: ", ether.dnsip);
-
+*/
     /* ... and register udptoStripled() to port 57600 */
-    ether.udpServerListenOnPort(&rispondi, 57600);
+    //ether.udpServerListenOnPort(&rispondi, 57600);
 }
 
 void loop() {
-    ether.packetLoop(ether.packetReceive());
+    //ether.packetLoop(ether.packetReceive());
 
     // Wait a few seconds between measurements.
     delay(500);
