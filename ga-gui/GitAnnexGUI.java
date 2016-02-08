@@ -405,7 +405,7 @@ public class GitAnnexGUI extends JFrame {
         resetData();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(this,originComponent.getOrigin(),"git-annex list "/*+originComponent.getOptions()*/);
+        Command command=new Command(this,originComponent.getOrigin(),"git-annex list --allrepos"/*+originComponent.getOptions()*/);
         command.start(); // bloccante...
         //
         long starting=System.currentTimeMillis();
