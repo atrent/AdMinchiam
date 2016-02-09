@@ -74,6 +74,7 @@ int status=STATUS_NORMAL; //default
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
+byte mac[6];
 PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
@@ -115,7 +116,7 @@ DHT dht(DHTPIN, DHTTYPE);
  */
 
 // variabili perche' dovranno essere configurabili a runtime
-String nomeNodo;
+char* nomeNodo;
 //String ssid;
 String pwdWifi;
 int tempSoglia=26;
@@ -124,20 +125,20 @@ float h,t,f,hif,hic;
 
 
 //////////////////////////////////////////
-void blinkLed(int i) {
+void util_blinkLed(int i) {
     digitalWrite(i,HIGH);
     delay(50);
     digitalWrite(i,LOW);
     delay(50);
 }
 
-void blinkLed(int i,int repeat) {
+void util_blinkLed(int i,int repeat) {
     for(int count=0; count<repeat; count++)
-        blinkLed(i);
+        util_blinkLed(i);
 }
 
 
-void printStatus() {
+void util_printStatus() {
     Serial.print("NODE: ");
     Serial.print(nomeNodo);
     Serial.print(", SSID: ");
@@ -164,17 +165,17 @@ void printStatus() {
 }
 
 
-void reconnect() {
+void mqtt_reconnect() {
     // Loop until we're reconnected
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect("termuinator2-ESP8266Client")) {
+        if (client.connect("termuinator2")) {
             Serial.println("connected");
             // Once connected, publish an announcement...
-            client.publish("termuinator2", "hello world");
+            client.publish("termuinator2", "first msg.");
             // ... and resubscribe
-            client.subscribe("termuinator2");
+            //client.subscribe("termuinator2");
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -187,7 +188,7 @@ void reconnect() {
 
 //////////////////////////////////////////
 void loop() {
-    blinkLed(LEDPIN); // tanto per dire "sono sveglio"
+    util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
@@ -208,7 +209,7 @@ void loop() {
     // Compute heat index in Celsius (isFahreheit = false)
     hic = dht.computeHeatIndex(t, h, false);
 
-    printStatus();
+    util_printStatus();
 
     if(t>=tempSoglia)
         digitalWrite(RELAY,HIGH);
@@ -231,7 +232,7 @@ void loop() {
 
 
     if (!client.connected()) {
-        reconnect();
+        mqtt_reconnect();
     }
     client.loop();
 
@@ -239,6 +240,8 @@ void loop() {
     if (now - lastMsg > 2000) {
         lastMsg = now;
         //++value;
+        
+        //TODO: come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
         snprintf (msg, 75, "temp: %.2f", t);
         Serial.print("Publish message: ");
         Serial.println(msg);
@@ -296,6 +299,7 @@ void loop() {
 void wifi_setup() {
 
     delay(10);
+
     // We start by connecting to a WiFi network
     Serial.println();
     Serial.print("Connecting to ");
@@ -308,13 +312,30 @@ void wifi_setup() {
         Serial.print(".");
     }
 
-    Serial.println("");
+    Serial.println();
     Serial.println("WiFi connected");
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
+    Serial.println("MAC address: ");
+    WiFi.macAddress(mac);
+    
+    
+    
+    //String nodo;
+    for (int i=0; i<6; i++) {
+        //nodo = nodo + mac[i];
+        Serial.println(mac[i],HEX);
+    }
+    //nodo="Termuinator_"+nodo;
+    
+    //char n[nodo.length()];
+    //nomeNodo=n;
+    
+    //Serial.println(nodo);
 }
 
-void callback(char* topic, byte* payload, unsigned int length) {
+/*
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     Serial.print("Message arrived [");
     Serial.print(topic);
     Serial.print("] ");
@@ -333,6 +354,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
 
 }
+*/
 
 
 
@@ -350,13 +372,14 @@ void setup() {
     dht.begin();
 
     wifi_setup();
+
     client.setServer(mqtt_server, 1883);
-    client.setCallback(callback);
+    //client.setCallback(mqtt_callback);
 
     // per dare feedback al boot
-    blinkLed(LEDPIN,10);
-    blinkLed(RELAY,10);
-    blinkLed(LEDPIN,10);
+    util_blinkLed(LEDPIN,10);
+    util_blinkLed(RELAY,10);
+    util_blinkLed(LEDPIN,10);
 
     Serial.println("Booted!");
 }
