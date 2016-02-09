@@ -70,15 +70,14 @@ int status=STATUS_NORMAL; //default
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
-const char* ssid = ".......";
-const char* password = ".......";
+#include "wifi-xelera.h"
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
-int value = 0;
+//int value = 0;
 
 
 
@@ -129,6 +128,7 @@ void blinkLed(int i) {
     digitalWrite(i,HIGH);
     delay(50);
     digitalWrite(i,LOW);
+    delay(50);
 }
 
 void blinkLed(int i,int repeat) {
@@ -169,12 +169,12 @@ void reconnect() {
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect("ESP8266Client")) {
+        if (client.connect("termuinator2-ESP8266Client")) {
             Serial.println("connected");
             // Once connected, publish an announcement...
-            client.publish("outTopic", "hello world");
+            client.publish("termuinator2", "hello world");
             // ... and resubscribe
-            client.subscribe("inTopic");
+            client.subscribe("termuinator2");
         } else {
             Serial.print("failed, rc=");
             Serial.print(client.state());
@@ -238,11 +238,11 @@ void loop() {
     long now = millis();
     if (now - lastMsg > 2000) {
         lastMsg = now;
-        ++value;
-        snprintf (msg, 75, "hello world #%ld", value);
+        //++value;
+        snprintf (msg, 75, "temp: %.2f", t);
         Serial.print("Publish message: ");
         Serial.println(msg);
-        client.publish("termuinator", msg);
+        client.publish("termuinator2", msg);
     }
 
     delay(500);
@@ -293,7 +293,7 @@ void loop() {
 
 
 
-void setup_wifi() {
+void wifi_setup() {
 
     delay(10);
     // We start by connecting to a WiFi network
@@ -357,4 +357,6 @@ void setup() {
     blinkLed(LEDPIN,10);
     blinkLed(RELAY,10);
     blinkLed(LEDPIN,10);
+
+    Serial.println("Booted!");
 }
