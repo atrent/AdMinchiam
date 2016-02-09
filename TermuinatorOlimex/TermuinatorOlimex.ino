@@ -27,7 +27,13 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-// TODO: board per unire ESP+SDlogger+DHT+mosfet
+
+// TODO: uso eeprom per salvare i config data
+
+// TODO: interfaccia seriale per config
+
+
+// circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
 // Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
 // PIR: https://www.sparkfun.com/products/13285
@@ -42,6 +48,15 @@
 //#include "FastLED.h" NON COMPATIBILE
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
 
+
+
+//////////////////////////////////////////////////
+
+#define STATUS_CONFIG 0
+#define STATUS_NORMAL 99
+int status=STATUS_NORMAL; //default
+
+//////////////////////////////////////////////////
 //#define TESTLED 16
 // 13 ok
 // 14 ok
@@ -110,16 +125,20 @@ float h,t,f,hif,hic;
 
 
 //////////////////////////////////////////
-void blinkLed(int i){
-        digitalWrite(i,HIGH);
-        delay(50);
-        digitalWrite(i,LOW);
+void blinkLed(int i) {
+    digitalWrite(i,HIGH);
+    delay(50);
+    digitalWrite(i,LOW);
+}
+
+void blinkLed(int i,int repeat) {
+    for(int count=0; count<repeat; count++)
+        blinkLed(i);
 }
 
 
-
-void printStatus(){
-	    Serial.print("NODE: ");
+void printStatus() {
+    Serial.print("NODE: ");
     Serial.print(nomeNodo);
     Serial.print(", SSID: ");
     Serial.print(ssid);
@@ -146,24 +165,24 @@ void printStatus(){
 
 
 void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Attempt to connect
-    if (client.connect("ESP8266Client")) {
-      Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("outTopic", "hello world");
-      // ... and resubscribe
-      client.subscribe("inTopic");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
+    // Loop until we're reconnected
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        // Attempt to connect
+        if (client.connect("ESP8266Client")) {
+            Serial.println("connected");
+            // Once connected, publish an announcement...
+            client.publish("outTopic", "hello world");
+            // ... and resubscribe
+            client.subscribe("inTopic");
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            // Wait 5 seconds before retrying
+            delay(5000);
+        }
     }
-  }
 }
 
 //////////////////////////////////////////
@@ -189,7 +208,7 @@ void loop() {
     // Compute heat index in Celsius (isFahreheit = false)
     hic = dht.computeHeatIndex(t, h, false);
 
-	printStatus();
+    printStatus();
 
     if(t>=tempSoglia)
         digitalWrite(RELAY,HIGH);
@@ -211,20 +230,20 @@ void loop() {
     //Serial.print(mySerial.read());
 
 
-  if (!client.connected()) {
-    reconnect();
-  }
-  client.loop();
+    if (!client.connected()) {
+        reconnect();
+    }
+    client.loop();
 
-  long now = millis();
-  if (now - lastMsg > 2000) {
-    lastMsg = now;
-    ++value;
-    snprintf (msg, 75, "hello world #%ld", value);
-    Serial.print("Publish message: ");
-    Serial.println(msg);
-    client.publish("termuinator", msg);
-  }
+    long now = millis();
+    if (now - lastMsg > 2000) {
+        lastMsg = now;
+        ++value;
+        snprintf (msg, 75, "hello world #%ld", value);
+        Serial.print("Publish message: ");
+        Serial.println(msg);
+        client.publish("termuinator", msg);
+    }
 
     delay(500);
 }
@@ -276,42 +295,42 @@ void loop() {
 
 void setup_wifi() {
 
-  delay(10);
-  // We start by connecting to a WiFi network
-  Serial.println();
-  Serial.print("Connecting to ");
-  Serial.println(ssid);
+    delay(10);
+    // We start by connecting to a WiFi network
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
 
-  WiFi.begin(ssid, password);
+    WiFi.begin(ssid, password);
 
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
-  Serial.println(WiFi.localIP());
+    Serial.println("");
+    Serial.println("WiFi connected");
+    Serial.println("IP address: ");
+    Serial.println(WiFi.localIP());
 }
 
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message arrived [");
-  Serial.print(topic);
-  Serial.print("] ");
-  for (int i = 0; i < length; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (int i = 0; i < length; i++) {
+        Serial.print((char)payload[i]);
+    }
+    Serial.println();
 
-  // Switch on the LED if an 1 was received as first character
-  if ((char)payload[0] == '1') {
-    digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-    // but actually the LED is on; this is because
-    // it is acive low on the ESP-01)
-  } else {
-    digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  }
+    // Switch on the LED if an 1 was received as first character
+    if ((char)payload[0] == '1') {
+        digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
+        // but actually the LED is on; this is because
+        // it is acive low on the ESP-01)
+    } else {
+        digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+    }
 
 }
 
@@ -321,10 +340,6 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
-	
-	
-	
-	
     Serial.begin(115200);
     Serial.println("Booting...");
 
@@ -334,13 +349,12 @@ void setup() {
 
     dht.begin();
 
-  setup_wifi();
-  client.setServer(mqtt_server, 1883);
-  client.setCallback(callback);
+    wifi_setup();
+    client.setServer(mqtt_server, 1883);
+    client.setCallback(callback);
 
-	// per dare feedback al boot
-    for(int i=0; i<10; i++) {
-        blinkLed(RELAY);
-        blinkLed(LEDPIN);
-    }
+    // per dare feedback al boot
+    blinkLed(LEDPIN,10);
+    blinkLed(RELAY,10);
+    blinkLed(LEDPIN,10);
 }
