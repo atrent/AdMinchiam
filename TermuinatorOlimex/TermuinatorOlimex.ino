@@ -41,14 +41,12 @@
 
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
 
-// TODO: compatibilita' MQTT
+// circa DONE: compatibilita' MQTT
 
 //////////////////////////////////////////////////
 #include "DHT.h"
 //#include "FastLED.h" NON COMPATIBILE
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
-
-
 
 //////////////////////////////////////////////////
 
@@ -116,7 +114,7 @@ DHT dht(DHTPIN, DHTTYPE);
  */
 
 // variabili perche' dovranno essere configurabili a runtime
-char* nomeNodo;
+String nomeNodo="Termuinator_";  //poi viene accodato il mac
 //String ssid;
 String pwdWifi;
 int tempSoglia=26;
@@ -139,7 +137,9 @@ void util_blinkLed(int i,int repeat) {
 
 
 void util_printStatus() {
-    Serial.print("NODE: ");
+    Serial.print("S: ");
+    Serial.print(status);
+    Serial.print(", NODE: ");
     Serial.print(nomeNodo);
     Serial.print(", SSID: ");
     Serial.print(ssid);
@@ -170,10 +170,10 @@ void mqtt_reconnect() {
     while (!client.connected()) {
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect("termuinator2")) {
+        if (client.connect(nomeNodo.c_str())) {
             Serial.println("connected");
             // Once connected, publish an announcement...
-            client.publish("termuinator2", "first msg.");
+            client.publish(nomeNodo.c_str(), "first msg.");
             // ... and resubscribe
             //client.subscribe("termuinator2");
         } else {
@@ -231,6 +231,8 @@ void loop() {
     //Serial.print(mySerial.read());
 
 
+	///////////////////////////////////////
+	// MQTT
     if (!client.connected()) {
         mqtt_reconnect();
     }
@@ -240,13 +242,18 @@ void loop() {
     if (now - lastMsg > 2000) {
         lastMsg = now;
         //++value;
-        
+
         //TODO: come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
-        snprintf (msg, 75, "temp: %.2f", t);
+        int temp=int(t);
+        int dec= int((t-temp)*100);
+        snprintf (msg, 75, "temp: %d.%d", temp,dec);
         Serial.print("Publish message: ");
         Serial.println(msg);
         client.publish("termuinator2", msg);
     }
+	///////////////////////////////////////
+
+
 
     delay(500);
 }
@@ -297,7 +304,6 @@ void loop() {
 
 
 void wifi_setup() {
-
     delay(10);
 
     // We start by connecting to a WiFi network
@@ -317,20 +323,18 @@ void wifi_setup() {
     Serial.println("IP address: ");
     Serial.println(WiFi.localIP());
     Serial.println("MAC address: ");
+
     WiFi.macAddress(mac);
-    
-    
-    
-    //String nodo;
+
     for (int i=0; i<6; i++) {
-        //nodo = nodo + mac[i];
-        Serial.println(mac[i],HEX);
+        nomeNodo += String(mac[i],HEX);
+        //Serial.print(mac[i],HEX);
+        //Serial.print(":");
     }
-    //nodo="Termuinator_"+nodo;
-    
+    Serial.println(nomeNodo);
+
     //char n[nodo.length()];
     //nomeNodo=n;
-    
     //Serial.println(nodo);
 }
 
