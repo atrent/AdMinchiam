@@ -49,10 +49,14 @@
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
 
 //////////////////////////////////////////////////
+#define DELAY_BLINK 30
+#define DELAY_LOOP 1000
 
+//////////////////////////////////////////////////
 #define STATUS_CONFIG 0
 #define STATUS_NORMAL 99
 int status=STATUS_NORMAL; //default
+// TODO: gestione stato
 
 //////////////////////////////////////////////////
 //#define TESTLED 16
@@ -68,7 +72,8 @@ int status=STATUS_NORMAL; //default
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
-#include "wifi-xelera.h"
+//#include "wifi-xelera.h"
+#include "wifi-atrent.h"
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
@@ -114,7 +119,8 @@ DHT dht(DHTPIN, DHTTYPE);
  */
 
 // variabili perche' dovranno essere configurabili a runtime
-String nomeNodo="Termuinator_";  //poi viene accodato il mac
+#define TOPIC "Termuinator"
+String nomeNodo=TOPIC;  //poi viene accodato il mac
 //String ssid;
 String pwdWifi;
 int tempSoglia=26;
@@ -125,9 +131,9 @@ float h,t,f,hif,hic;
 //////////////////////////////////////////
 void util_blinkLed(int i) {
     digitalWrite(i,HIGH);
-    delay(50);
+    delay(DELAY_BLINK);
     digitalWrite(i,LOW);
-    delay(50);
+    delay(DELAY_BLINK);
 }
 
 void util_blinkLed(int i,int repeat) {
@@ -249,13 +255,14 @@ void loop() {
         snprintf (msg, 75, "temp: %d.%d", temp,dec);
         Serial.print("Publish message: ");
         Serial.println(msg);
-        client.publish("termuinator2", msg);
+        //client.publish(TOPIC, msg); // cosi' non e' identificabile
+        client.publish(nomeNodo.c_str(), msg);
     }
 	///////////////////////////////////////
 
 
 
-    delay(500);
+    delay(DELAY_LOOP);
 }
 
 
