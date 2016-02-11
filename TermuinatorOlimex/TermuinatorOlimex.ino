@@ -30,8 +30,7 @@
 
 // TODO: uso eeprom per salvare i config data
 
-// TODO: interfaccia seriale per config
-
+// circa DONE: interfaccia seriale per config [TODO: DA TESTARE]
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
@@ -53,9 +52,11 @@
 #define DELAY_LOOP 1000
 
 //////////////////////////////////////////////////
-#define STATUS_CONFIG 0
-#define STATUS_NORMAL 99
-int status=STATUS_NORMAL; //default
+//#define STATUS_CONFIG 0
+//#define STATUS_NORMAL 99
+//int status=STATUS_NORMAL; //default
+// non c'e' bisogno di una variabile se abbiamo solo normale/setup
+
 // TODO: gestione stato
 
 //////////////////////////////////////////////////
@@ -73,7 +74,8 @@ int status=STATUS_NORMAL; //default
 
 // Update these with values suitable for your network.
 #include "wifi-secrets.h"
-const char* mqtt_server = "broker.mqtt-dashboard.com";
+//const char* mqtt_server = "broker.mqtt-dashboard.com";
+String mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
 byte mac[6];
@@ -141,10 +143,28 @@ void util_blinkLed(int i,int repeat) {
 }
 
 
+String util_input(String msg) {
+    Serial.println(msg);			// prompt
+    while (Serial.available()==0) { // wait for input
+        delay(5);
+    }
+    return Serial.readString();     // read input
+}
+
+
+void config() {
+    ssid=util_input("ssid: ");
+    pwdWifi=util_input("psk: ");
+    mqtt_server=util_input("mqtt broker: ");
+
+    tempSoglia=util_input("t-soglia: ").toInt();
+    finestraIsteresi=util_input("isteresi: ").toInt();
+}
+
 void util_printStatus() {
-    Serial.print("S: ");
-    Serial.print(status);
-    Serial.print(", NODE: ");
+    /*  Serial.print("S: ");
+        Serial.print(status);    */
+    Serial.print("NODE: ");
     Serial.print(nomeNodo);
     Serial.print(", SSID: ");
     Serial.print(ssid);
@@ -195,6 +215,10 @@ void mqtt_reconnect() {
 void loop() {
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
+    if(digitalRead(0)==LOW) { // tasto -> config
+        config();
+    }
+
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     h = dht.readHumidity();
@@ -236,8 +260,8 @@ void loop() {
     //Serial.print(mySerial.read());
 
 
-	///////////////////////////////////////
-	// MQTT
+    ///////////////////////////////////////
+    // MQTT
     if (!client.connected()) {
         mqtt_reconnect();
     }
@@ -257,7 +281,7 @@ void loop() {
         //client.publish(TOPIC, msg); // cosi' non e' identificabile
         client.publish(nomeNodo.c_str(), msg);
     }
-	///////////////////////////////////////
+    ///////////////////////////////////////
 
 
 
@@ -317,7 +341,7 @@ void wifi_setup() {
     Serial.print("Connecting to ");
     Serial.println(ssid);
 
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
 
     while (WiFi.status() != WL_CONNECTED) {
         delay(500);
@@ -372,18 +396,21 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
+    util_blinkLed(LEDPIN,10);
+
     Serial.begin(115200);
     Serial.println("Booting...");
 
     pinMode(RELAY, OUTPUT);
     pinMode(LEDPIN, OUTPUT);
     pinMode(DHTPIN, INPUT);
+    pinMode(0, INPUT_PULLUP); //per cambio stato
 
     dht.begin();
 
     wifi_setup();
 
-    client.setServer(mqtt_server, 1883);
+    client.setServer(mqtt_server.c_str(), 1883);
     //client.setCallback(mqtt_callback);
 
     // per dare feedback al boot
