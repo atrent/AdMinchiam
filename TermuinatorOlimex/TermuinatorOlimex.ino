@@ -72,8 +72,7 @@ int status=STATUS_NORMAL; //default
 #include <PubSubClient.h>
 
 // Update these with values suitable for your network.
-//#include "wifi-xelera.h"
-#include "wifi-atrent.h"
+#include "wifi-secrets.h"
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 
 WiFiClient espClient;
