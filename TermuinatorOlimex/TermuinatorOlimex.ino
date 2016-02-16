@@ -47,11 +47,22 @@
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
 
 //////////////////////////////////////////////////
-#include "EEPROM.h"
+#include <EEPROM.h>
+
+//// non vanno, mah, manca un include
+//#include <EEPROMVar.h>
+//#include <EEPROMEx.h>
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
 #define DELAY_LOOP 1000
+
+//////////////////////////////////////////////////
+#define DEBUG true
+
+
+//////////////////////////////////////////////////
+#define MAX_EEPROM 1024
 
 //////////////////////////////////////////////////
 //#define STATUS_CONFIG 0
@@ -140,13 +151,91 @@ int cursor=0; // for EEPROM
 
 //////////////////////////////////////////
 
-/*
 void eeprom_writeString(String s) {
-    EEPROM.write(cursor,s.c_str());
+    if(DEBUG) {
+        Serial.print(s);
+        Serial.print(" to write @");
+        Serial.println(cursor);
+    }
+
+    EEPROM.put(cursor,s.c_str());
+
+    if(DEBUG) {
+        Serial.print((char)EEPROM.read(cursor-1));
+    }
+
+    cursor+=s.length();
+
+    //EEPROM.write(cursor,0); //null char
+    //cursor++;
+
     EEPROM.commit();
-    cursor+=s.length()+1; // null char?
+
+    if(DEBUG) {
+        Serial.print(s);
+        Serial.print(" written @");
+        Serial.println(cursor);
+    }
 }
 
+
+String eeprom_readString() {
+    if(DEBUG) {
+        Serial.print("reading @");
+        Serial.println(cursor);
+    }
+
+    String s="";
+    char c=0;
+    while(
+        (c=EEPROM.read(cursor))!=0
+    ) {
+        if(DEBUG)Serial.println(s);
+
+        s.concat(c);
+        cursor++;
+    }
+
+
+    if(DEBUG) {
+        Serial.print(s);
+        Serial.print(" read, now @");
+        Serial.println(cursor);
+    }
+    return s;
+}
+
+
+void eeprom_seek(int c) {
+    if(DEBUG) {
+        Serial.print("seek cursor:");
+        Serial.println(cursor);
+    }
+
+    if (c<0) cursor=0;
+    else if(c>MAX_EEPROM) cursor=MAX_EEPROM;
+    else
+        cursor=c;
+
+    if(DEBUG) {
+        Serial.print("seek cursor:");
+        Serial.println(cursor);
+    }
+}
+
+void eeprom_seek() {
+    eeprom_seek(0);
+}
+
+void eeprom_debug_readAll() {
+    eeprom_seek();
+    for(int i=0; i<MAX_EEPROM; i++) {
+        Serial.print((char)EEPROM.read(i));
+    }
+    Serial.println();
+}
+
+/*
 void eeprom_writeInt(int i) {
     EEPROM.write(cursor,i);
     EEPROM.commit();
@@ -158,12 +247,8 @@ int eeprom_readInt() {
     EEPROM.get(cursor, i);
     cursor+=sizeof(int);
 }
-
-int eeprom_readInt() {
-
-
-}
 */
+
 
 //////////////////////////////////////////
 
@@ -482,12 +567,18 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
-    EEPROM.begin(4096); //MAX DIM EEPROM ON ESP8266
+    EEPROM.begin(MAX_EEPROM); //MAX DIM EEPROM ON ESP8266
 
     util_blinkLed(LEDPIN,10);
 
     Serial.begin(115200);
     Serial.println("Booting...");
+
+
+    eeprom_writeString("minnie");
+    eeprom_writeString("paperoga");
+    eeprom_seek(0);
+
 
     pinMode(RELAY, OUTPUT);
     pinMode(LEDPIN, OUTPUT);
@@ -505,6 +596,12 @@ void setup() {
     util_blinkLed(LEDPIN,10);
     util_blinkLed(RELAY,10);
     util_blinkLed(LEDPIN,10);
+
+	eeprom_debug_readAll();
+    /*
+    Serial.println(eeprom_readString());
+    Serial.println(eeprom_readString());
+    */
 
     Serial.println("Booted!");
 }
