@@ -30,7 +30,9 @@
 
 // TODO: uso eeprom per salvare i config data
 
-// circa DONE: interfaccia seriale per config [TODO: DA TESTARE]
+// TODO: mqtt topic patterns
+
+// TODO: JSON
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
@@ -57,7 +59,7 @@
 //int status=STATUS_NORMAL; //default
 // non c'e' bisogno di una variabile se abbiamo solo normale/setup
 
-// TODO: gestione stato
+// TODO: gestione stato (forse no, tanto c'e' solo normale/config)
 
 //////////////////////////////////////////////////
 //#define TESTLED 16
@@ -76,7 +78,8 @@
 #include "wifi-secrets.h"
 
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
-String mqtt_server = "broker.mqtt-dashboard.com";
+//String mqtt_server = "broker.mqtt-dashboard.com";
+String mqtt_server = "test.mosquitto.org";
 
 WiFiClient espClient;
 byte mac[6];
@@ -112,19 +115,17 @@ char msg[50];
 DHT dht(DHTPIN, DHTTYPE);
 
 /* TODO: aggiornare!!!
- * parametri config (nel file TERMU.INI)
- * 1) nomeNodo
+ * parametri config (nel file TERMU.INI) [ORA VIA SERIALE] [non in ordine]
+ * 1) broker
  * 2) ssid  //forse anche metodo (WPA/etc.)?
- * 3) pwdWifi
+ * 3) password
  * 4) tempSoglia
  * 5) finestraIsteresi
  */
 
 // variabili perche' dovranno essere configurabili a runtime
 #define TOPIC "Termuinator"
-String nomeNodo=TOPIC;  //poi viene accodato il mac
-//String ssid;
-String pwdWifi;
+String nomeNodo;  //poi viene accodato il mac
 int tempSoglia=26;
 int finestraIsteresi=2;
 float h,t,f,hif,hic;
@@ -143,23 +144,53 @@ void util_blinkLed(int i,int repeat) {
         util_blinkLed(i);
 }
 
+void util_emptySerial() {
+    while (Serial.available()!=0) { // wait for input
+        delay(1);
+        Serial.read();
+    }
+}
 
-String util_input(String msg) {
+String util_input(String msg, String old) {
+    Serial.print("(");
+    Serial.print(old);
+    Serial.print(") ");
+
     Serial.println(msg);			// prompt
     while (Serial.available()==0) { // wait for input
         delay(5);
     }
-    return Serial.readString();     // read input
+    String newS = Serial.readString();     // read input
+    newS.trim();
+
+    Serial.print("input:");
+    Serial.print(newS);
+    Serial.print(" di lunghezza: ");
+    Serial.println(newS.length());
+
+    if(newS.length()==0) {
+        Serial.println("old");
+        util_emptySerial();
+        return old;
+    }
+    Serial.println("new");
+    return newS;
 }
 
 
-void config() {
-    ssid=util_input("ssid: ");
-    pwdWifi=util_input("psk: ");
-    mqtt_server=util_input("mqtt broker: ");
+void node_config() {
+    util_emptySerial();
 
-    tempSoglia=util_input("t-soglia: ").toInt();
-    finestraIsteresi=util_input("isteresi: ").toInt();
+    ssid=util_input("ssid: ",ssid);
+    password=util_input("psk: ",password);
+
+    mqtt_server=util_input("mqtt broker: ",mqtt_server);
+
+    tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
+    finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
+
+    // reboot
+    setup();
 }
 
 void util_printStatus() {
@@ -195,7 +226,7 @@ void util_printStatus() {
     Serial.print(hic);
     Serial.print("C/");
     Serial.print(hif);
-    Serial.print("F, ");    
+    Serial.print("F, ");
 
     Serial.print(ESP.getFreeHeap(),DEC);
     Serial.println(" mem");
@@ -203,8 +234,15 @@ void util_printStatus() {
 
 
 void mqtt_reconnect() {
+
+    // TODO: nr. tentativi???
+
+
     // Loop until we're reconnected
     while (!client.connected()) {
+        if(digitalRead(0)==LOW) { // tasto -> esce
+            break;
+        }
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
         if (client.connect(nomeNodo.c_str())) {
@@ -228,7 +266,7 @@ void loop() {
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     if(digitalRead(0)==LOW) { // tasto -> config
-        config();
+        node_config();
     }
 
     // Reading temperature or humidity takes about 250 milliseconds!
@@ -284,7 +322,7 @@ void loop() {
         lastMsg = now;
         //++value;
 
-        //TODO: come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
+        // come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
         int temp=int(t);
         int dec= int((t-temp)*100);
         snprintf (msg, 75, "temp: %d.%d", temp,dec);
@@ -368,10 +406,12 @@ void wifi_setup() {
 
     WiFi.macAddress(mac);
 
+    nomeNodo=TOPIC;
+    Serial.print("MAC=");
     for (int i=0; i<6; i++) {
         nomeNodo += String(mac[i],HEX);
-        //Serial.print(mac[i],HEX);
-        //Serial.print(":");
+        Serial.print(mac[i],HEX);
+        Serial.print(":");
     }
     Serial.println(nomeNodo);
 
@@ -401,10 +441,6 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 }
 */
-
-
-
-
 
 //////////////////////////////////////////
 void setup() {
