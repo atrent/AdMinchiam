@@ -47,6 +47,9 @@
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
 
 //////////////////////////////////////////////////
+#include "EEPROM.h"
+
+//////////////////////////////////////////////////
 #define DELAY_BLINK 30
 #define DELAY_LOOP 1000
 
@@ -131,21 +134,36 @@ DHT dht(DHTPIN, DHTTYPE);
 String nomeNodo;  //poi viene accodato il mac
 int tempSoglia=26;
 int finestraIsteresi=2;
-float humid,temperature,fahreneit,hif,hic;
-int cursor=0; // for EEPROM 
+float humidity,temperature,fahreneit,hif,hic;
+int cursor=0; // for EEPROM
 
 
 //////////////////////////////////////////
 
+/*
+void eeprom_writeString(String s) {
+    EEPROM.write(cursor,s.c_str());
+    EEPROM.commit();
+    cursor+=s.length()+1; // null char?
+}
 
-String eeprom_readString(){
-	}
+void eeprom_writeInt(int i) {
+    EEPROM.write(cursor,i);
+    EEPROM.commit();
+    cursor+=s.length()+1; // null char?
+}
 
-int eeprom_readInt(){
-	
-	
-	}
+int eeprom_readInt() {
+    int i=0;
+    EEPROM.get(cursor, i);
+    cursor+=sizeof(int);
+}
 
+int eeprom_readInt() {
+
+
+}
+*/
 
 //////////////////////////////////////////
 
@@ -180,7 +198,7 @@ String util_input(String msg, String old) {
     String newS = Serial.readString();     // read input
     newS.trim();
 
-	/*
+    /*
     Serial.print("input:");
     Serial.print(newS);
     Serial.print(" di lunghezza: ");
@@ -198,8 +216,8 @@ String util_input(String msg, String old) {
 
 
 void node_config() {
-	// TODO: uso eeprom per salvare i config data
-	// BEWARE:   https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#eeprom
+    // TODO: uso eeprom per salvare i config data
+    // BEWARE:   https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#eeprom
 
     util_emptySerial();
 
@@ -235,13 +253,13 @@ void util_printStatus() {
     Serial.print(finestraIsteresi);
 
     Serial.print(", Humidity: ");
-    Serial.print(h);
+    Serial.print(humidity);
     Serial.print("%, ");
 
     Serial.print("Temperature: ");
-    Serial.print(t);
+    Serial.print(temperature);
     Serial.print("C/");
-    Serial.print(f);
+    Serial.print(fahreneit);
     Serial.print("F, ");
 
     Serial.print("Heat index: ");
@@ -257,7 +275,7 @@ void util_printStatus() {
 
 void mqtt_reconnect() {
     // TODO: nr. tentativi???  [LOW_PRI]
-    
+
     // Loop until we're reconnected
     while (!client.connected()) {
         if(digitalRead(0)==LOW) { // tasto -> esce
@@ -298,22 +316,22 @@ void loop() {
     fahreneit = dht.readTemperature(true);
 
     // Check if any reads failed and exit early (to try again).
-    if (isnan(humidity) || isnan(t) || isnan(f)) {
+    if (isnan(humidity) || isnan(temperature) || isnan(fahreneit)) {
         Serial.println("Failed to read from DHT sensor!");
         return;
     }
 
     // Compute heat index in Fahrenheit (the default)
-    hif = dht.computeHeatIndex(f, h);
+    hif = dht.computeHeatIndex(fahreneit, humidity);
     // Compute heat index in Celsius (isFahreheit = false)
-    hic = dht.computeHeatIndex(t, h, false);
+    hic = dht.computeHeatIndex(temperature, humidity, false);
 
     util_printStatus();
 
-    if(t>=tempSoglia)
+    if(temperature>=tempSoglia)
         digitalWrite(RELAY,HIGH);
 
-    if(t<=(tempSoglia-finestraIsteresi))
+    if(temperature<=(tempSoglia-finestraIsteresi))
         digitalWrite(RELAY,LOW);
 
     /*
@@ -343,8 +361,8 @@ void loop() {
         lastMsg = now;
         //++value;
         // come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
-        int temp=int(t);
-        int dec= int((t-temp)*100);
+        int temp=int(temperature);
+        int dec= int((temperature-temp)*100);
         snprintf (msg, 75, "temp: %d.%d", temp,dec);
         Serial.print("Publish message: ");
         Serial.println(msg);
@@ -464,8 +482,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
-	EEPROM.begin(4096); //MAX DIM EEPROM ON ESP8266
-	
+    EEPROM.begin(4096); //MAX DIM EEPROM ON ESP8266
+
     util_blinkLed(LEDPIN,10);
 
     Serial.begin(115200);
