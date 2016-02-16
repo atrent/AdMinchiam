@@ -27,9 +27,6 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-
-// TODO: uso eeprom per salvare i config data
-
 // TODO: mqtt topic patterns
 
 // TODO: JSON
@@ -59,7 +56,7 @@
 //int status=STATUS_NORMAL; //default
 // non c'e' bisogno di una variabile se abbiamo solo normale/setup
 
-// TODO: gestione stato (forse no, tanto c'e' solo normale/config)
+// TODO: gestione stato (forse no, tanto c'e' solo normale/config) [LOW_PRI]
 
 //////////////////////////////////////////////////
 //#define TESTLED 16
@@ -82,10 +79,16 @@
 String mqtt_server = "test.mosquitto.org";
 
 WiFiClient espClient;
+
 byte mac[6];
+
 PubSubClient client(espClient);
+
+
+// per mqtt
 long lastMsg = 0;
 char msg[50];
+
 //int value = 0;
 
 
@@ -128,10 +131,24 @@ DHT dht(DHTPIN, DHTTYPE);
 String nomeNodo;  //poi viene accodato il mac
 int tempSoglia=26;
 int finestraIsteresi=2;
-float h,t,f,hif,hic;
+float humid,temperature,fahreneit,hif,hic;
+int cursor=0; // for EEPROM 
 
 
 //////////////////////////////////////////
+
+
+String eeprom_readString(){
+	}
+
+int eeprom_readInt(){
+	
+	
+	}
+
+
+//////////////////////////////////////////
+
 void util_blinkLed(int i) {
     digitalWrite(i,HIGH);
     delay(DELAY_BLINK);
@@ -156,29 +173,34 @@ String util_input(String msg, String old) {
     Serial.print(old);
     Serial.print(") ");
 
-    Serial.println(msg);			// prompt
+    Serial.print(msg);				// prompt
     while (Serial.available()==0) { // wait for input
         delay(5);
     }
     String newS = Serial.readString();     // read input
     newS.trim();
 
+	/*
     Serial.print("input:");
     Serial.print(newS);
     Serial.print(" di lunghezza: ");
     Serial.println(newS.length());
+    */
 
     if(newS.length()==0) {
-        Serial.println("old");
+        Serial.println(old);
         util_emptySerial();
         return old;
     }
-    Serial.println("new");
+    Serial.println(newS);
     return newS;
 }
 
 
 void node_config() {
+	// TODO: uso eeprom per salvare i config data
+	// BEWARE:   https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#eeprom
+
     util_emptySerial();
 
     ssid=util_input("ssid: ",ssid);
@@ -234,10 +256,8 @@ void util_printStatus() {
 
 
 void mqtt_reconnect() {
-
-    // TODO: nr. tentativi???
-
-
+    // TODO: nr. tentativi???  [LOW_PRI]
+    
     // Loop until we're reconnected
     while (!client.connected()) {
         if(digitalRead(0)==LOW) { // tasto -> esce
@@ -271,14 +291,14 @@ void loop() {
 
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
-    h = dht.readHumidity();
+    humidity = dht.readHumidity();
     // Read temperature as Celsius (the default)
-    t = dht.readTemperature();
+    temperature = dht.readTemperature();
     // Read temperature as Fahrenheit (isFahrenheit = true)
-    f = dht.readTemperature(true);
+    fahreneit = dht.readTemperature(true);
 
     // Check if any reads failed and exit early (to try again).
-    if (isnan(h) || isnan(t) || isnan(f)) {
+    if (isnan(humidity) || isnan(t) || isnan(f)) {
         Serial.println("Failed to read from DHT sensor!");
         return;
     }
@@ -312,6 +332,7 @@ void loop() {
 
     ///////////////////////////////////////
     // MQTT
+    // TODO: ripulire, ora e' preso da esempi MQTT
     if (!client.connected()) {
         mqtt_reconnect();
     }
@@ -321,7 +342,6 @@ void loop() {
     if (now - lastMsg > 2000) {
         lastMsg = now;
         //++value;
-
         // come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
         int temp=int(t);
         int dec= int((t-temp)*100);
@@ -444,6 +464,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
+	EEPROM.begin(4096); //MAX DIM EEPROM ON ESP8266
+	
     util_blinkLed(LEDPIN,10);
 
     Serial.begin(115200);
