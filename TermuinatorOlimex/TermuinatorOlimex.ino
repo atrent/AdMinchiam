@@ -74,6 +74,7 @@
 
 // Update these with values suitable for your network.
 #include "wifi-secrets.h"
+
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
 String mqtt_server = "broker.mqtt-dashboard.com";
 
@@ -164,29 +165,40 @@ void config() {
 void util_printStatus() {
     /*  Serial.print("S: ");
         Serial.print(status);    */
+
     Serial.print("NODE: ");
     Serial.print(nomeNodo);
+
     Serial.print(", SSID: ");
     Serial.print(ssid);
-    Serial.print(", PWD: ");
-    Serial.print(pwdWifi);
+
+    //Serial.print(", PWD: ");
+    //Serial.print(pwdWifi);
+
     Serial.print(", TEMPSOGLIA: ");
     Serial.print(tempSoglia);
+
     Serial.print(", ISTERESI: ");
     Serial.print(finestraIsteresi);
+
     Serial.print(", Humidity: ");
     Serial.print(h);
     Serial.print("%, ");
+
     Serial.print("Temperature: ");
     Serial.print(t);
     Serial.print("C/");
     Serial.print(f);
     Serial.print("F, ");
+
     Serial.print("Heat index: ");
     Serial.print(hic);
     Serial.print("C/");
     Serial.print(hif);
-    Serial.println("F, ");
+    Serial.print("F, ");    
+
+    Serial.print(ESP.getFreeHeap(),DEC);
+    Serial.println(" mem");
 }
 
 
