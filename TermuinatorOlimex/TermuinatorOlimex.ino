@@ -15,9 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 //////////////////////////////////////////////////////////////////////////////
-
 // per ArduinoIDE ricordarsi https://www.olimex.com/Products/IoT/ESP8266-EVB/resources/ESP8266-EVB-how-to-use-Arduino.pdf
-
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
 /*
@@ -39,54 +37,25 @@
 // TODO: mqtt topic patterns
 
 //////////////////////////////////////////////////
-#include "DHT.h"
-//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
-//#include "Adafruit_WS2801.h" NON COMPATIBILE
-
-//////////////////////////////////////////////////
-#define DELAY_BLINK 30
-#define DELAY_LOOP 1000
-
-//////////////////////////////////////////////////
-#define DEBUG true
-
-//////////////////////////////////////////////////
-//#define STATUS_CONFIG 0
-//#define STATUS_NORMAL 99
-//int status=STATUS_NORMAL; //default
-// non c'e' bisogno di una variabile se abbiamo solo normale/setup
-
-// TODO: gestione stato (forse no, tanto c'e' solo normale/config) [LOW_PRI]
-
-//////////////////////////////////////////////////
-//#define TESTLED 16
-// 13 ok
-// 14 ok
-// 15 ok (non diretto sui pin che ho saldato)
-// 16 ok
-
-#define RELAY 5
-#define LEDPIN 16
-
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>  // mqtt
-
-#include "wifi-secrets.h"
-
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
 //String mqtt_server = "broker.mqtt-dashboard.com";
-String mqtt_server = "test.mosquitto.org";
-
-WiFiClient espClient;
+//String mqtt_server = "test.mosquitto.org";
+String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
 
 byte mac[6];
 
-// per mqtt
-PubSubClient client(espClient);
-long lastMsg = 0;
-char msg[50];
+#define TOPIC "Termuinator"
+String nomeNodo;  //poi viene accodato il mac
 
-////////////////////////////////////////////////////////
+int tempSoglia=26;
+int finestraIsteresi=2;
+float humidity,temperature,fahreneit,hif,hic;
+boolean acceso=false;
+
+//////////////////////////////////////////////////
+#include "DHT.h"
+//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
+//#include "Adafruit_WS2801.h" NON COMPATIBILE
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11   // DHT 11
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
@@ -110,6 +79,46 @@ char msg[50];
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
 DHT dht(DHTPIN, DHTTYPE);
 
+//////////////////////////////////////////////////
+#define DELAY_BLINK 30
+#define DELAY_LOOP 1000
+
+//////////////////////////////////////////////////
+#define DEBUG true
+
+//////////////////////////////////////////////////
+//#define STATUS_CONFIG 0
+//#define STATUS_NORMAL 99
+//int status=STATUS_NORMAL; //default
+// non c'e' bisogno di una variabile se abbiamo solo normale/setup
+// TODO: gestione stato (forse no, tanto c'e' solo normale/config) [LOW_PRI]
+
+//////////////////////////////////////////////////
+//#define TESTLED 16
+// 13 ok
+// 14 ok
+// 15 ok (non diretto sui pin che ho saldato)
+// 16 ok
+
+#define RELAY 5
+#define LEDPIN 16
+
+///////////////////////////////////////////////////
+#include <ESP8266WiFi.h>
+WiFiClient espClient;
+
+///////////////////////////////////////////////////
+#include <PubSubClient.h>  // mqtt
+PubSubClient client(espClient);
+long lastMsg = 0;
+char msg[50];
+
+///////////////////////////////////////////////////
+#include "wifi-secrets.h"
+#include "spiffs.h"
+#include "utils.h"
+
+////////////////////////////////////////////////////////
 /* TODO: aggiornare!!!
  * parametri config (nel file TERMU.INI) [ORA VIA SERIALE] [non in ordine]
  * 1) broker
@@ -119,120 +128,12 @@ DHT dht(DHTPIN, DHTTYPE);
  * 5) finestraIsteresi
  */
 
-// variabili perche' dovranno essere configurabili a runtime
-#define TOPIC "Termuinator"
-String nomeNodo;  //poi viene accodato il mac
-int tempSoglia=26;
-int finestraIsteresi=2;
-float humidity,temperature,fahreneit,hif,hic;
-
 //////////////////////////////////////////
-
-void util_blinkLed(int i) {
-    digitalWrite(i,HIGH);
-    delay(DELAY_BLINK);
-    digitalWrite(i,LOW);
-    delay(DELAY_BLINK);
-}
-
-void util_blinkLed(int i,int repeat) {
-    for(int count=0; count<repeat; count++)
-        util_blinkLed(i);
-}
-
-void util_emptySerial() {
-    while (Serial.available()!=0) { // wait for input
-        delay(1);
-        Serial.read();
-    }
-}
-
-String util_input(String msg, String old) {
-    Serial.print("(");
-    Serial.print(old);
-    Serial.print(") ");
-
-    Serial.print(msg);				// prompt
-    while (Serial.available()==0) { // wait for input
-        delay(5);
-    }
-    String newS = Serial.readString();     // read input
-    newS.trim();
-
-    /*
-    Serial.print("input:");
-    Serial.print(newS);
-    Serial.print(" di lunghezza: ");
-    Serial.println(newS.length());
-    */
-
-    if(newS.length()==0) {
-        Serial.println(old);
-        util_emptySerial();
-        return old;
-    }
-    Serial.println(newS);
-    return newS;
-}
-
-
-void node_config() {
-    // TODO: uso eeprom per salvare i config data
-    // BEWARE:   https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#eeprom
-
-    util_emptySerial();
-
-    ssid=util_input("ssid: ",ssid);
-    password=util_input("psk: ",password);
-
-    mqtt_server=util_input("mqtt broker: ",mqtt_server);
-
-    tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
-    finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
-
-    // reboot
-    setup();
-}
-
-void util_printStatus() {
-    /*  Serial.print("S: ");
-        Serial.print(status);    */
-
-    Serial.print("NODE: ");
-    Serial.print(nomeNodo);
-
-    Serial.print(", SSID: ");
-    Serial.print(ssid);
-
-    //Serial.print(", PWD: ");
-    //Serial.print(pwdWifi);
-
-    Serial.print(", TEMPSOGLIA: ");
-    Serial.print(tempSoglia);
-
-    Serial.print(", ISTERESI: ");
-    Serial.print(finestraIsteresi);
-
-    Serial.print(", Humidity: ");
-    Serial.print(humidity);
-    Serial.print("%, ");
-
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.print("C/");
-    Serial.print(fahreneit);
-    Serial.print("F, ");
-
-    Serial.print("Heat index: ");
-    Serial.print(hic);
-    Serial.print("C/");
-    Serial.print(hif);
-    Serial.print("F, ");
-
-    Serial.print(ESP.getFreeHeap(),DEC);
-    Serial.println(" mem");
-}
-
+// headers... // TODO: capire perche' non e' piu' indifferente l'ordine di definizione!!!
+//void wifi_setup();
+void node_config();
+//void services();
+//////////////////////////////////////////
 
 void mqtt_reconnect() {
     // TODO: nr. tentativi???  [LOW_PRI]
@@ -262,9 +163,8 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
-    eeprom_seekZero();
-    eeprom_readString();
-    eeprom_debug_readAll();
+    // test fs
+    //Serial.println(spiffs_getValue("/ssid"));
 
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
@@ -293,11 +193,15 @@ void loop() {
 
     util_printStatus();
 
-    if(temperature>=tempSoglia)
+    if(temperature>=tempSoglia) {
         digitalWrite(RELAY,HIGH);
+        acceso=true;
+    }
 
-    if(temperature<=(tempSoglia-finestraIsteresi))
+    if(temperature<=(tempSoglia-finestraIsteresi)) {
         digitalWrite(RELAY,LOW);
+        acceso=false;
+    }
 
     /*
       mySerial.print("ls");
@@ -336,58 +240,11 @@ void loop() {
     }
     ///////////////////////////////////////
 
-
-
     delay(DELAY_LOOP);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
- Basic ESP8266 MQTT example
-
- This sketch demonstrates the capabilities of the pubsub library in combination
- with the ESP8266 board/library.
-
- It connects to an MQTT server then:
-  - publishes "hello world" to the topic "outTopic" every two seconds
-  - subscribes to the topic "inTopic", printing out any messages
-    it receives. NB - it assumes the received payloads are strings not binary
-  - If the first character of the topic "inTopic" is an 1, switch ON the ESP Led,
-    else switch it off
-
- It will reconnect to the server if the connection is lost using a blocking
- reconnect function. See the 'mqtt_reconnect_nonblocking' example for how to
- achieve the same result without blocking the main loop.
-
- To install the ESP8266 board, (using Arduino 1.6.4+):
-  - Add the following 3rd party board manager under "File -> Preferences -> Additional Boards Manager URLs":
-       http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
-  - Select your ESP8266 in "Tools -> Board"
-
-*/
-
-
-
 void wifi_setup() {
-    delay(10);
+    delay(100);
 
     // We start by connecting to a WiFi network
     Serial.println();
@@ -423,6 +280,15 @@ void wifi_setup() {
     //Serial.println(nodo);
 }
 
+void services() {
+    // wifi (dip. da parametri)
+    wifi_setup();
+
+    // mqtt (dip. da parametri)
+    client.setServer(mqtt_server.c_str(), 1883);
+    //client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
+}
+
 /*
 void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     Serial.print("Message arrived [");
@@ -445,48 +311,83 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 }
 */
 
+void node_config() {
+    util_emptySerial();
+
+    ssid=util_input("ssid: ",ssid);
+    password=util_input("psk: ",password);
+
+    mqtt_server=util_input("mqtt broker: ",mqtt_server);
+
+    tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
+    finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
+
+    //TODO: scrivere su fs
+
+    // restart services
+    services();
+}
+
 //////////////////////////////////////////
 void setup() {
-    eeprom_init();
-
-    util_blinkLed(LEDPIN,10);
-
     Serial.begin(115200);
     Serial.println("Booting...");
 
+    if(DEBUG)
+        util_printStatus();
 
-    if(EEPROM_WRITE) {
-        eeprom_writeString("minnie");
-        eeprom_seekRelative(10);
-        eeprom_writeString("paperoga");
-        eeprom_seekZero();
-        //TODO: inserire test stringhe eeprom
-    }
-    //eeprom_readString();
-
+    util_blinkLed(LEDPIN,10);
 
     pinMode(RELAY, OUTPUT);
     pinMode(LEDPIN, OUTPUT);
     pinMode(DHTPIN, INPUT);
     pinMode(0, INPUT_PULLUP); //per cambio stato
 
+    // filesystem
+    SPIFFS.begin();
+    spiffs_getValues();
+
+    if(DEBUG)
+        util_printStatus();
+
+    // sensor
     dht.begin();
 
-    wifi_setup();
+    services();
 
-    client.setServer(mqtt_server.c_str(), 1883);
-    //client.setCallback(mqtt_callback);
-
-    // per dare feedback al boot
+    // "ammuina" per dare feedback al boot
     util_blinkLed(LEDPIN,10);
     util_blinkLed(RELAY,10);
     util_blinkLed(LEDPIN,10);
 
-    eeprom_debug_readAll();
-    /*
-    Serial.println(eeprom_readString());
-    Serial.println(eeprom_readString());
-    */
-
     Serial.println("Booted!");
 }
+
+
+
+
+
+/*
+ Basic ESP8266 MQTT example
+
+ This sketch demonstrates the capabilities of the pubsub library in combination
+ with the ESP8266 board/library.
+
+ It connects to an MQTT server then:
+  - publishes "hello world" to the topic "outTopic" every two seconds
+  - subscribes to the topic "inTopic", printing out any messages
+    it receives. NB - it assumes the received payloads are strings not binary
+  - If the first character of the topic "inTopic" is an 1, switch ON the ESP Led,
+    else switch it off
+
+ It will reconnect to the server if the connection is lost using a blocking
+ reconnect function. See the 'mqtt_reconnect_nonblocking' example for how to
+ achieve the same result without blocking the main loop.
+
+ To install the ESP8266 board, (using Arduino 1.6.4+):
+  - Add the following 3rd party board manager under "File -> Preferences -> Additional Boards Manager URLs":
+       http://arduino.esp8266.com/stable/package_esp8266com_index.json
+  - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
+  - Select your ESP8266 in "Tools -> Board"
+
+*/
