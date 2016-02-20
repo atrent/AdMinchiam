@@ -20,38 +20,35 @@
 
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
-
 /*
  * devices:
  * 1) attuatore efficientatore (original Termuinator!)
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-// TODO: mqtt topic patterns
-
 // TODO: JSON
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
-// Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
-// PIR: https://www.sparkfun.com/products/13285
+// [NO] Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
+// [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
-
 // circa DONE: compatibilita' MQTT
+// TODO: mqtt topic patterns
 
 //////////////////////////////////////////////////
 #include "DHT.h"
-//#include "FastLED.h" NON COMPATIBILE
+//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
-
-//////////////////////////////////////////////////
-#include "EEPROM.h"
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
 #define DELAY_LOOP 1000
+
+//////////////////////////////////////////////////
+#define DEBUG true
 
 //////////////////////////////////////////////////
 //#define STATUS_CONFIG 0
@@ -72,9 +69,8 @@
 #define LEDPIN 16
 
 #include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <PubSubClient.h>  // mqtt
 
-// Update these with values suitable for your network.
 #include "wifi-secrets.h"
 
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
@@ -85,16 +81,10 @@ WiFiClient espClient;
 
 byte mac[6];
 
-PubSubClient client(espClient);
-
-
 // per mqtt
+PubSubClient client(espClient);
 long lastMsg = 0;
 char msg[50];
-
-//int value = 0;
-
-
 
 ////////////////////////////////////////////////////////
 // Uncomment whatever type you're using!
@@ -135,35 +125,6 @@ String nomeNodo;  //poi viene accodato il mac
 int tempSoglia=26;
 int finestraIsteresi=2;
 float humidity,temperature,fahreneit,hif,hic;
-int cursor=0; // for EEPROM
-
-
-//////////////////////////////////////////
-
-/*
-void eeprom_writeString(String s) {
-    EEPROM.write(cursor,s.c_str());
-    EEPROM.commit();
-    cursor+=s.length()+1; // null char?
-}
-
-void eeprom_writeInt(int i) {
-    EEPROM.write(cursor,i);
-    EEPROM.commit();
-    cursor+=s.length()+1; // null char?
-}
-
-int eeprom_readInt() {
-    int i=0;
-    EEPROM.get(cursor, i);
-    cursor+=sizeof(int);
-}
-
-int eeprom_readInt() {
-
-
-}
-*/
 
 //////////////////////////////////////////
 
@@ -301,6 +262,10 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
+    eeprom_seekZero();
+    eeprom_readString();
+    eeprom_debug_readAll();
+
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     if(digitalRead(0)==LOW) { // tasto -> config
@@ -482,12 +447,23 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
-    EEPROM.begin(4096); //MAX DIM EEPROM ON ESP8266
+    eeprom_init();
 
     util_blinkLed(LEDPIN,10);
 
     Serial.begin(115200);
     Serial.println("Booting...");
+
+
+    if(EEPROM_WRITE) {
+        eeprom_writeString("minnie");
+        eeprom_seekRelative(10);
+        eeprom_writeString("paperoga");
+        eeprom_seekZero();
+        //TODO: inserire test stringhe eeprom
+    }
+    //eeprom_readString();
+
 
     pinMode(RELAY, OUTPUT);
     pinMode(LEDPIN, OUTPUT);
@@ -505,6 +481,12 @@ void setup() {
     util_blinkLed(LEDPIN,10);
     util_blinkLed(RELAY,10);
     util_blinkLed(LEDPIN,10);
+
+    eeprom_debug_readAll();
+    /*
+    Serial.println(eeprom_readString());
+    Serial.println(eeprom_readString());
+    */
 
     Serial.println("Booted!");
 }
