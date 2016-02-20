@@ -20,38 +20,28 @@
 
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
-
 /*
  * devices:
  * 1) attuatore efficientatore (original Termuinator!)
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-// TODO: mqtt topic patterns
-
 // TODO: JSON
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
-// Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
-// PIR: https://www.sparkfun.com/products/13285
+// [NO] Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
+// [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
-
 // circa DONE: compatibilita' MQTT
+// TODO: mqtt topic patterns
 
 //////////////////////////////////////////////////
 #include "DHT.h"
-//#include "FastLED.h" NON COMPATIBILE
+//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
 //#include "Adafruit_WS2801.h" NON COMPATIBILE
-
-//////////////////////////////////////////////////
-#include <EEPROM.h>
-
-//// non vanno, mah, manca un include
-//#include <EEPROMVar.h>
-//#include <EEPROMEx.h>
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
@@ -59,10 +49,6 @@
 
 //////////////////////////////////////////////////
 #define DEBUG true
-
-
-//////////////////////////////////////////////////
-#define MAX_EEPROM 1024
 
 //////////////////////////////////////////////////
 //#define STATUS_CONFIG 0
@@ -83,9 +69,8 @@
 #define LEDPIN 16
 
 #include <ESP8266WiFi.h>
-#include <PubSubClient.h>
+#include <PubSubClient.h>  // mqtt
 
-// Update these with values suitable for your network.
 #include "wifi-secrets.h"
 
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
@@ -96,18 +81,12 @@ WiFiClient espClient;
 
 byte mac[6];
 
-PubSubClient client(espClient);
-
-
 // per mqtt
+PubSubClient client(espClient);
 long lastMsg = 0;
 
 #define MSG_LEN 150
 char msg[MSG_LEN];
-
-//int value = 0;
-
-
 
 ////////////////////////////////////////////////////////
 // Uncomment whatever type you're using!
@@ -148,109 +127,6 @@ String nomeNodo;  //poi viene accodato il mac
 int tempSoglia=26;
 int finestraIsteresi=2;
 float humidity,temperature,fahreneit,hif,hic;
-int cursor=0; // for EEPROM
-
-
-//////////////////////////////////////////
-
-void eeprom_writeString(String s) {
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" to write @");
-        Serial.println(cursor);
-    }
-
-    EEPROM.put(cursor,s.c_str());
-
-    if(DEBUG) {
-        Serial.print((char)EEPROM.read(cursor-1));
-    }
-
-    cursor+=s.length();
-
-    //EEPROM.write(cursor,0); //null char
-    //cursor++;
-
-    EEPROM.commit();
-
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" written @");
-        Serial.println(cursor);
-    }
-}
-
-
-String eeprom_readString() {
-    if(DEBUG) {
-        Serial.print("reading @");
-        Serial.println(cursor);
-    }
-
-    String s="";
-    char c=0;
-    while(
-        (c=EEPROM.read(cursor))!=0
-    ) {
-        if(DEBUG)Serial.println(s);
-
-        s.concat(c);
-        cursor++;
-    }
-
-
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" read, now @");
-        Serial.println(cursor);
-    }
-    return s;
-}
-
-
-void eeprom_seek(int c) {
-    if(DEBUG) {
-        Serial.print("seek cursor:");
-        Serial.println(cursor);
-    }
-
-    if (c<0) cursor=0;
-    else if(c>MAX_EEPROM) cursor=MAX_EEPROM;
-    else
-        cursor=c;
-
-    if(DEBUG) {
-        Serial.print("seek cursor:");
-        Serial.println(cursor);
-    }
-}
-
-void eeprom_seek() {
-    eeprom_seek(0);
-}
-
-void eeprom_debug_readAll() {
-    eeprom_seek();
-    for(int i=0; i<MAX_EEPROM; i++) {
-        Serial.print((char)EEPROM.read(i));
-    }
-    Serial.println();
-}
-
-/*
-void eeprom_writeInt(int i) {
-    EEPROM.write(cursor,i);
-    EEPROM.commit();
-    cursor+=s.length()+1; // null char?
-}
-
-int eeprom_readInt() {
-    int i=0;
-    EEPROM.get(cursor, i);
-    cursor+=sizeof(int);
-}
-*/
-
 
 //////////////////////////////////////////
 
@@ -388,7 +264,6 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
-
     char str_temp[6];
     char str_hic[6];
     char str_humidity[6];
@@ -576,18 +451,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 
 //////////////////////////////////////////
 void setup() {
-    EEPROM.begin(MAX_EEPROM); //MAX DIM EEPROM ON ESP8266
-
     util_blinkLed(LEDPIN,10);
 
     Serial.begin(115200);
     Serial.println("Booting...");
-
-
-    eeprom_writeString("minnie");
-    eeprom_writeString("paperoga");
-    eeprom_seek(0);
-
 
     pinMode(RELAY, OUTPUT);
     pinMode(LEDPIN, OUTPUT);
@@ -606,7 +473,6 @@ void setup() {
     util_blinkLed(RELAY,10);
     util_blinkLed(LEDPIN,10);
 
-	eeprom_debug_readAll();
     /*
     Serial.println(eeprom_readString());
     Serial.println(eeprom_readString());
