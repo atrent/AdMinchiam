@@ -442,7 +442,6 @@ void loop() {
 
     ///////////////////////////////////////
     // MQTT
-    // TODO: ripulire, ora e' preso da esempi MQTT
     if (!client.connected()) {
         mqtt_reconnect();
     }
@@ -455,12 +454,13 @@ void loop() {
         dtostrf(hic, 4, 2, str_hic);
         dtostrf(humidity, 4, 2, str_humidity);
         snprintf (msg, MSG_LEN, 
-          "{\"_type\":\"termuinator\",\"ssid\":\"%s\",\"temp\":%s,\"trigger_temp\":%d,\"histeresys\":%d,\"humidity\":\"%s\",\"h_index\":%s}",
-         ssid.c_str(),str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
-        //client.publish(TOPIC, msg); // cosi' non e' identificabile
+          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
+            str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
+        // Serial.println(msg);
         if (client.publish(nomeNodo.c_str(), msg)){
-         Serial.print("Publish message: ");
-         Serial.println(msg);
+         Serial.println("info: MQTT message succesfully published");
+        } else { 
+          Serial.println("error: MQTT publishing error (connection error or message too large)");
         };
     }
     ///////////////////////////////////////

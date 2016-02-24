@@ -1,6 +1,9 @@
 MQTT Termuinator setup
 ========================
 
+Termuinator uses MQTT to publish data in json format, via the Arduino library:
+http://pubsubclient.knolleary.net/
+
 Topic
 -----
 
@@ -22,4 +25,8 @@ Data is published as a json stream with this schema:
 
 all temperatures are **in Celsius degrees**
 
+MQTT servers for testing
+-------------------------
 
+For testing purposes you can use the ``test.mosquitto.org`` broker, just be
+aware that the payload size is limited (but the limit is undocumented)
