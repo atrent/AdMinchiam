@@ -101,7 +101,9 @@ PubSubClient client(espClient);
 
 // per mqtt
 long lastMsg = 0;
-char msg[50];
+
+#define MSG_LEN 150
+char msg[MSG_LEN];
 
 //int value = 0;
 
@@ -386,6 +388,11 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
+
+    char str_temp[6];
+    char str_hic[6];
+    char str_humidity[6];
+
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     if(digitalRead(0)==LOW) { // tasto -> config
@@ -435,7 +442,6 @@ void loop() {
 
     ///////////////////////////////////////
     // MQTT
-    // TODO: ripulire, ora e' preso da esempi MQTT
     if (!client.connected()) {
         mqtt_reconnect();
     }
@@ -444,15 +450,18 @@ void loop() {
     long now = millis();
     if (now - lastMsg > 2000) {
         lastMsg = now;
-        //++value;
-        // come cazzo si stampa un float!?! (odio il C e i concetti derivati!!!)
-        int temp=int(temperature);
-        int dec= int((temperature-temp)*100);
-        snprintf (msg, 75, "temp: %d.%d", temp,dec);
-        Serial.print("Publish message: ");
-        Serial.println(msg);
-        //client.publish(TOPIC, msg); // cosi' non e' identificabile
-        client.publish(nomeNodo.c_str(), msg);
+        dtostrf(temperature, 4, 2, str_temp);
+        dtostrf(hic, 4, 2, str_hic);
+        dtostrf(humidity, 4, 2, str_humidity);
+        snprintf (msg, MSG_LEN, 
+          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
+            str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
+        // Serial.println(msg);
+        if (client.publish(nomeNodo.c_str(), msg)){
+         Serial.println("info: MQTT message succesfully published");
+        } else { 
+          Serial.println("error: MQTT publishing error (connection error or message too large)");
+        };
     }
     ///////////////////////////////////////
 
