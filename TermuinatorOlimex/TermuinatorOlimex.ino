@@ -111,7 +111,6 @@ WiFiClient espClient;
 #include <PubSubClient.h>  // mqtt
 PubSubClient client(espClient);
 long lastMsg = 0;
-
 #define MSG_LEN 150
 char msg[MSG_LEN];
 
