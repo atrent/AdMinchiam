@@ -52,8 +52,14 @@ void util_printStatus() {
     Serial.print("NODE: ");
     Serial.print(nomeNodo);
 
+    Serial.print(", wifi enabled: ");
+    Serial.print(wifi);
+
     Serial.print(", SSID: ");
     Serial.print(ssid);
+
+    Serial.print(", PSK: ");
+    Serial.print(password);
 
     Serial.print(", mqtt: ");
     Serial.print(mqtt_server);

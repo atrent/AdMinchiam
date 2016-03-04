@@ -18,6 +18,11 @@
 // per ArduinoIDE ricordarsi https://www.olimex.com/Products/IoT/ESP8266-EVB/resources/ESP8266-EVB-how-to-use-Arduino.pdf
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
+
+// MAIN https://github.com/esp8266/Arduino
+// SPIFFS https://github.com/esp8266/Arduino/blob/master/doc/filesystem.md
+// SPIFFS plugin Download the tool: https://github.com/esp8266/arduino-esp8266fs-plugin/releases/download/0.2.0/ESP8266FS-0.2.0.zip.
+
 /*
  * devices:
  * 1) attuatore efficientatore (original Termuinator!)
@@ -41,6 +46,8 @@
 //String mqtt_server = "broker.mqtt-dashboard.com";
 //String mqtt_server = "test.mosquitto.org";
 String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
+
+// mosquitto_sub -v -h test.mosquitto.org -t Termuinator18fe34a206e
 
 byte mac[6];
 
@@ -81,7 +88,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
-#define DELAY_LOOP 1000
+#define DELAY_LOOP 5000
 
 //////////////////////////////////////////////////
 #define DEBUG true
@@ -107,6 +114,9 @@ DHT dht(DHTPIN, DHTTYPE);
 #include <ESP8266WiFi.h>
 WiFiClient espClient;
 
+
+#define WIFI_TENTATIVI 100
+
 ///////////////////////////////////////////////////
 #include <PubSubClient.h>  // mqtt
 PubSubClient client(espClient);
@@ -115,7 +125,12 @@ long lastMsg = 0;
 char msg[MSG_LEN];
 
 ///////////////////////////////////////////////////
-#include "wifi-secrets.h"
+String wifi = "";
+String ssid = "";
+String password = "";
+
+// TODO: ordinare le dichiarazioni variabili e gli include e i define
+
 #include "spiffs.h"
 #include "utils.h"
 
@@ -133,11 +148,13 @@ char msg[MSG_LEN];
 // headers... // TODO: capire perche' non e' piu' indifferente l'ordine di definizione!!!
 //void wifi_setup();
 void node_config();
-//void services();
+int net_services();
 //////////////////////////////////////////
 
 void mqtt_reconnect() {
     // TODO: nr. tentativi???  [LOW_PRI]
+
+    // TODO: condizionare invio (altrove)
 
     // Loop until we're reconnected
     while (!client.connected()) {
@@ -164,6 +181,8 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
+    if (WiFi.status() != WL_CONNECTED) net_services();
+
     char str_temp[6];
     char str_hic[6];
     char str_humidity[6];
@@ -222,35 +241,38 @@ void loop() {
     //Serial.print(mySerial.read());
 
 
-    ///////////////////////////////////////
-    // MQTT
-    if (!client.connected()) {
-        mqtt_reconnect();
-    }
-    client.loop();
 
-    long now = millis();
-    if (now - lastMsg > 2000) {
-        lastMsg = now;
-        dtostrf(temperature, 4, 2, str_temp);
-        dtostrf(hic, 4, 2, str_hic);
-        dtostrf(humidity, 4, 2, str_humidity);
-        snprintf (msg, MSG_LEN, 
-          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
-            str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
-        // Serial.println(msg);
-        if (client.publish(nomeNodo.c_str(), msg)){
-         Serial.println("info: MQTT message succesfully published");
-        } else { 
-          Serial.println("error: MQTT publishing error (connection error or message too large)");
-        };
+    if (WiFi.status() == WL_CONNECTED) {
+
+        ///////////////////////////////////////
+        // MQTT
+        if (!client.connected()) {
+            mqtt_reconnect();
+        }
+        client.loop();
+
+        long now = millis();
+        if (now - lastMsg > 2000) {
+            lastMsg = now;
+            dtostrf(temperature, 4, 2, str_temp);
+            dtostrf(hic, 4, 2, str_hic);
+            dtostrf(humidity, 4, 2, str_humidity);
+            snprintf (msg, MSG_LEN,
+                      "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
+                      str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
+            // Serial.println(msg);
+            if (client.publish(nomeNodo.c_str(), msg)) {
+                Serial.println("info: MQTT message succesfully published");
+            } else {
+                Serial.println("error: MQTT publishing error (connection error or message too large)");
+            };
+        }
     }
-    ///////////////////////////////////////
 
     delay(DELAY_LOOP);
 }
 
-void wifi_setup() {
+boolean wifi_setup() {
     delay(100);
 
     // We start by connecting to a WiFi network
@@ -258,42 +280,55 @@ void wifi_setup() {
     Serial.print("Connecting to ");
     Serial.println(ssid);
 
+    WiFi.disconnect();
     WiFi.begin(ssid.c_str(), password.c_str());
 
-    while (WiFi.status() != WL_CONNECTED) {
+    for (int i=0; (WiFi.status() != WL_CONNECTED) && (i < WIFI_TENTATIVI) && digitalRead(0)==HIGH; i++) {
         delay(500);
         Serial.print(".");
     }
 
-    Serial.println();
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println("MAC address: ");
+    if(WiFi.status() == WL_CONNECTED) {
+        Serial.println();
+        Serial.println("WiFi connected");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
 
-    WiFi.macAddress(mac);
-
-    nomeNodo=TOPIC;
-    Serial.print("MAC=");
-    for (int i=0; i<6; i++) {
-        nomeNodo += String(mac[i],HEX);
-        Serial.print(mac[i],HEX);
-        Serial.print(":");
+        //char n[nodo.length()];
+        //nomeNodo=n;
+        //Serial.println(nodo);
+        return true;
     }
-    Serial.println(nomeNodo);
-
-    //char n[nodo.length()];
-    //nomeNodo=n;
-    //Serial.println(nodo);
+    else {
+        Serial.println("WiFi FAILED!");
+        return false;
+    }
 }
 
-void services() {
-    // wifi (dip. da parametri)
-    wifi_setup();
+int net_services() {
+    Serial.println("entro in net services");
+    if(wifi.startsWith("y")) {
 
-    // mqtt (dip. da parametri)
-    client.setServer(mqtt_server.c_str(), 1883);
-    //client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
+        // wifi (dip. da parametri)
+        if(wifi_setup()) {
+
+
+            // TODO: deve funzionare anche senza broker, quindi check se bloccante!!!
+            // mqtt (dip. da parametri)
+            client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
+            //client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
+
+            Serial.println("mqtt set");
+            return 0;
+        }
+        Serial.println("mqtt NOT set");
+        return -1;
+    }
+    else {
+        Serial.print("wifi enabled? ");
+        Serial.println(wifi);
+        return -2;
+    }
 }
 
 /*
@@ -321,6 +356,7 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
 void node_config() {
     util_emptySerial();
 
+    wifi=util_input("wifi enable: ",wifi);
     ssid=util_input("ssid: ",ssid);
     password=util_input("psk: ",password);
 
@@ -329,10 +365,10 @@ void node_config() {
     tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
     finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
 
-    //TODO: scrivere su fs
+    spiffs_writeValues();
 
     // restart services
-    services();
+    net_services();
 }
 
 //////////////////////////////////////////
@@ -360,7 +396,18 @@ void setup() {
     // sensor
     dht.begin();
 
-    services();
+    //net_services();
+    Serial.println("MAC address: ");
+    WiFi.macAddress(mac);
+    nomeNodo=TOPIC;
+    Serial.print("MAC=");
+    for (int i=0; i<6; i++) {
+        nomeNodo += String(mac[i],HEX);
+        Serial.print(mac[i],HEX);
+        Serial.print(":");
+    }
+    Serial.println(nomeNodo);
+    WiFi.disconnect();
 
     // "ammuina" per dare feedback al boot
     util_blinkLed(LEDPIN,10);
