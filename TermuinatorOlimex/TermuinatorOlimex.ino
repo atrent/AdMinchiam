@@ -89,6 +89,7 @@ DHT dht(DHTPIN, DHTTYPE);
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
 #define DELAY_LOOP 5000
+#define DELAY_MQTT 9000
 
 //////////////////////////////////////////////////
 #define DEBUG true
@@ -111,15 +112,18 @@ DHT dht(DHTPIN, DHTTYPE);
 #define LEDPIN 16
 
 ///////////////////////////////////////////////////
+//https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#wifiesp8266wifi-library
+//https://www.arduino.cc/en/Reference/WiFi
 #include <ESP8266WiFi.h>
 WiFiClient espClient;
-
+IPAddress gateway;
 
 #define WIFI_TENTATIVI 100
+#define USE_GW "[gw]"
 
 ///////////////////////////////////////////////////
 #include <PubSubClient.h>  // mqtt
-PubSubClient client(espClient);
+PubSubClient mqtt_client(espClient);
 long lastMsg = 0;
 #define MSG_LEN 150
 char msg[MSG_LEN];
@@ -152,29 +156,27 @@ int net_services();
 //////////////////////////////////////////
 
 void mqtt_reconnect() {
-    // TODO: nr. tentativi???  [LOW_PRI]
+    // TODO: nr. tentativi???  per forza perche' se non trova mqtt server non fa piu' nulla
 
     // TODO: condizionare invio (altrove)
 
     // Loop until we're reconnected
-    while (!client.connected()) {
-        if(digitalRead(0)==LOW) { // tasto -> esce
-            break;
-        }
+    if (!mqtt_client.connected()) {
+
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect(nomeNodo.c_str())) {
+        if (mqtt_client.connect(nomeNodo.c_str())) {
             Serial.println("connected");
             // Once connected, publish an announcement...
-            client.publish(nomeNodo.c_str(), "first msg.");
+            mqtt_client.publish(nomeNodo.c_str(), "first msg.");
             // ... and resubscribe
-            //client.subscribe("termuinator2");
+            //mqtt_client.subscribe("termuinator2");
         } else {
             Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
+            Serial.print(mqtt_client.state());
+            Serial.println(" skipping MQTT...");
             // Wait 5 seconds before retrying
-            delay(5000);
+            //delay(5000);
         }
     }
 }
@@ -246,26 +248,30 @@ void loop() {
 
         ///////////////////////////////////////
         // MQTT
-        if (!client.connected()) {
+        if (!mqtt_client.connected()) {
             mqtt_reconnect();
         }
-        client.loop();
 
-        long now = millis();
-        if (now - lastMsg > 2000) {
-            lastMsg = now;
-            dtostrf(temperature, 4, 2, str_temp);
-            dtostrf(hic, 4, 2, str_hic);
-            dtostrf(humidity, 4, 2, str_humidity);
-            snprintf (msg, MSG_LEN,
-                      "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
-                      str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
-            // Serial.println(msg);
-            if (client.publish(nomeNodo.c_str(), msg)) {
-                Serial.println("info: MQTT message succesfully published");
-            } else {
-                Serial.println("error: MQTT publishing error (connection error or message too large)");
-            };
+
+        if (mqtt_client.connected()) {
+            mqtt_client.loop();
+
+            long now = millis();
+            if (now - lastMsg > DELAY_MQTT) {
+                lastMsg = now;
+                dtostrf(temperature, 4, 2, str_temp);
+                dtostrf(hic, 4, 2, str_hic);
+                dtostrf(humidity, 4, 2, str_humidity);
+                snprintf (msg, MSG_LEN,
+                          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
+                          str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
+                // Serial.println(msg);
+                if (mqtt_client.publish(nomeNodo.c_str(), msg)) {
+                    Serial.println("info: MQTT message succesfully published");
+                } else {
+                    Serial.println("error: MQTT publishing error (connection error or message too large)");
+                }
+            }
         }
     }
 
@@ -294,6 +300,12 @@ boolean wifi_setup() {
         Serial.println("IP address: ");
         Serial.println(WiFi.localIP());
 
+        gateway=WiFi.gatewayIP();
+
+        if(mqtt_server.equals(USE_GW)) mqtt_server=String(gateway[0])+"."+String(gateway[1])+"."+String(gateway[2])+"."+String(gateway[3]);
+
+        Serial.println(gateway);
+
         //char n[nodo.length()];
         //nomeNodo=n;
         //Serial.println(nodo);
@@ -313,10 +325,10 @@ int net_services() {
         if(wifi_setup()) {
 
 
-            // TODO: deve funzionare anche senza broker, quindi check se bloccante!!!
+            // DONE: deve funzionare anche senza broker, quindi check se bloccante!!! fatto, nel senso che abbiamo messo la reconnect monotentativo
             // mqtt (dip. da parametri)
-            client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
-            //client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
+			mqtt_client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
+            //mqtt_client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
 
             Serial.println("mqtt set");
             return 0;
