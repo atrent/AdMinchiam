@@ -48,6 +48,9 @@ String util_input(String msg, String old) {
 void util_printStatus() {
     /*  Serial.print("S: ");
         Serial.print(status);    */
+        
+        
+        SwSerial.println(nomeNodo);
 
     Serial.print("NODE: ");
     Serial.print(nomeNodo);
@@ -92,3 +95,8 @@ void util_printStatus() {
     Serial.print(ESP.getFreeHeap(),DEC);
     Serial.println(" mem");
 }
+
+
+
+
+// TODO: qualche funzione per mostrare roba su lcd

@@ -18,7 +18,6 @@
 // per ArduinoIDE ricordarsi https://www.olimex.com/Products/IoT/ESP8266-EVB/resources/ESP8266-EVB-how-to-use-Arduino.pdf
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
-
 // MAIN https://github.com/esp8266/Arduino
 // SPIFFS https://github.com/esp8266/Arduino/blob/master/doc/filesystem.md
 // SPIFFS plugin Download the tool: https://github.com/esp8266/arduino-esp8266fs-plugin/releases/download/0.2.0/ESP8266FS-0.2.0.zip.
@@ -29,14 +28,15 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-
 // TODO: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
 
-// TODO: LCD
+// TODO: LCD (bootstrapped), trovare elenco caratteri speciali (commands)
 
 // TODO: bottone selezione temperatura
 
 // TODO: PIR sensor
+
+// TODO: DHT sensor se manca non entrare in loop
 
 // TODO: JSON
 
@@ -120,6 +120,13 @@ DHT dht(DHTPIN, DHTTYPE);
 #define RELAY 5
 #define LEDPIN 16
 
+#define BUTTON 0
+
+///////////////////////////////////////////////////
+#include <SoftwareSerial.h>
+#define LCD 14 
+SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
+
 ///////////////////////////////////////////////////
 //https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#wifiesp8266wifi-library
 //https://www.arduino.cc/en/Reference/WiFi
@@ -192,6 +199,11 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
+	/*
+	    SwSerial.print("loop...");
+	    delay(100);
+	*/
+
     if (WiFi.status() != WL_CONNECTED) net_services();
 
     char str_temp[6];
@@ -203,7 +215,7 @@ void loop() {
 
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
-    if(digitalRead(0)==LOW) { // tasto -> config
+    if(digitalRead(BUTTON)==LOW) { // tasto -> config
         node_config();
     }
 
@@ -396,6 +408,9 @@ void node_config() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Booting...");
+    
+    SwSerial.begin(9600);
+    SwSerial.println("booting...");
 
     if(DEBUG)
         util_printStatus();

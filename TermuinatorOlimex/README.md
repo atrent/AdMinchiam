@@ -14,4 +14,4 @@ Note sparse
     Flash Size:
     “2M (1M SPIFFS)”
     Upload Speed:
-    “57600”
+    “115200”
