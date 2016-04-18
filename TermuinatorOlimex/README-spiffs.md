@@ -6,3 +6,4 @@ password
 soglia
 ssid
 wifi
+modalita

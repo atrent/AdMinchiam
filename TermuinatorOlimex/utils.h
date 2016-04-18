@@ -1,3 +1,9 @@
+void util_switch(boolean on) {
+    digitalWrite(RELAY,on);
+    acceso=on;
+}
+
+
 void util_blinkLed(int i) {
     digitalWrite(i,HIGH);
     delay(DELAY_BLINK);
@@ -48,9 +54,9 @@ String util_input(String msg, String old) {
 void util_printStatus() {
     /*  Serial.print("S: ");
         Serial.print(status);    */
-        
-        
-        SwSerial.println(nomeNodo);
+
+
+    SwSerial.println(nomeNodo);
 
     Serial.print("NODE: ");
     Serial.print(nomeNodo);

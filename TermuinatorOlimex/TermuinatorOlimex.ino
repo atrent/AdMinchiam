@@ -36,6 +36,8 @@
 
 // TODO: PIR sensor
 
+// TODO: "inglesizzare" variabili e funzioni
+
 // TODO: DHT sensor se manca non entrare in loop
 
 // TODO: JSON
@@ -68,6 +70,13 @@ int finestraIsteresi=2;
 float humidity,temperature,fahreneit,hif,hic;
 boolean acceso=false;
 
+#define EFFICIENTATORE	'e'
+#define TERMOSTATO		't'
+char modalita=EFFICIENTATORE;
+
+#define ON	HIGH
+#define OFF	LOW
+
 //////////////////////////////////////////////////
 #include "DHT.h"
 //#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
@@ -93,7 +102,7 @@ boolean acceso=false;
 // Note that older versions of this library took an optional third parameter to
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
-DHT dht(DHTPIN, DHTTYPE);
+                 DHT dht(DHTPIN, DHTTYPE);
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
@@ -124,7 +133,7 @@ DHT dht(DHTPIN, DHTTYPE);
 
 ///////////////////////////////////////////////////
 #include <SoftwareSerial.h>
-#define LCD 14 
+#define LCD 14
 SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
 
 ///////////////////////////////////////////////////
@@ -199,10 +208,10 @@ void mqtt_reconnect() {
 
 //////////////////////////////////////////
 void loop() {
-	/*
-	    SwSerial.print("loop...");
-	    delay(100);
-	*/
+    /*
+        SwSerial.print("loop...");
+        delay(100);
+    */
 
     if (WiFi.status() != WL_CONNECTED) net_services();
 
@@ -240,14 +249,15 @@ void loop() {
 
     util_printStatus();
 
-    if(temperature>=tempSoglia) {
-        digitalWrite(RELAY,HIGH);
-        acceso=true;
-    }
+    switch(modalita) {
+    case EFFICIENTATORE:
+        if(temperature >= tempSoglia) util_switch(ON);
+        if(temperature <= (tempSoglia-finestraIsteresi)) util_switch(OFF);
+        break;
 
-    if(temperature<=(tempSoglia-finestraIsteresi)) {
-        digitalWrite(RELAY,LOW);
-        acceso=false;
+    case TERMOSTATO:
+        if(temperature <= tempSoglia) util_switch(ON);
+        if(temperature >= (tempSoglia+finestraIsteresi)) util_switch(OFF);
     }
 
     /*
@@ -348,7 +358,7 @@ int net_services() {
 
             // DONE: deve funzionare anche senza broker, quindi check se bloccante!!! fatto, nel senso che abbiamo messo la reconnect monotentativo
             // mqtt (dip. da parametri)
-			mqtt_client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
+            mqtt_client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
             //mqtt_client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
 
             Serial.println("mqtt set");
@@ -395,6 +405,8 @@ void node_config() {
 
     mqtt_server=util_input("mqtt broker: ",mqtt_server);
 
+    modalita=util_input("modalita (e/t): ",String(modalita)).charAt(0);
+
     tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
     finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
 
@@ -408,7 +420,7 @@ void node_config() {
 void setup() {
     Serial.begin(115200);
     Serial.println("Booting...");
-    
+
     SwSerial.begin(9600);
     SwSerial.println("booting...");
 

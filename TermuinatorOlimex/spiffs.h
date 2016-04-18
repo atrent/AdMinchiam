@@ -28,7 +28,7 @@ int spiffs_writeValue(String file,String value) {
 }
 
 int spiffs_writeValue(String file,int value) {
-	spiffs_writeValue(file, String(value));
+    spiffs_writeValue(file, String(value));
 }
 
 
@@ -45,6 +45,12 @@ void spiffs_getValues() {
     tmp=spiffs_getValue("/broker");
     if(tmp!=SPIFFS_NA) mqtt_server=tmp;
 
+    tmp=spiffs_getValue("/modalita");
+    if(tmp!=SPIFFS_NA){
+		if(tmp.charAt(0)==EFFICIENTATORE) modalita=EFFICIENTATORE;
+		if(tmp.charAt(0)==TERMOSTATO) modalita=TERMOSTATO;
+	 }
+
     tmp=spiffs_getValue("/soglia");
     if(tmp!=SPIFFS_NA) tempSoglia=tmp.toInt(); // attenzione che se non e' un numero torna 0!!!
 
@@ -56,8 +62,9 @@ void spiffs_getValues() {
 void spiffs_writeValues() {
     spiffs_writeValue("/wifi",wifi);
     spiffs_writeValue("/ssid",ssid);
-	spiffs_writeValue("/password",password);
+    spiffs_writeValue("/password",password);
     spiffs_writeValue("/broker",mqtt_server);
+    spiffs_writeValue("/modalita",String(modalita));
     spiffs_writeValue("/soglia",tempSoglia);
     spiffs_writeValue("/isteresi",finestraIsteresi);
 }
