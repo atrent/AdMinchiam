@@ -29,6 +29,15 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
+
+// TODO: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
+
+// TODO: LCD
+
+// TODO: bottone selezione temperatura
+
+// TODO: PIR sensor
+
 // TODO: JSON
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
