@@ -28,22 +28,35 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
+
+// versione "termostato":
 // TODO: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
-
+// TODO: PIR sensor (presenza ospiti, decisione attivazione termostato)
 // TODO: LCD (bootstrapped), trovare elenco caratteri speciali (commands)
+// TODO: bottone selezione temperatura (su,giu)
 
-// TODO: bottone selezione temperatura
+// TODO: integrare  TaskScheduler (https://github.com/arkhipenko/TaskScheduler)
+//		- blink led
+//		- connessione wifi
+//		- connessione mqtt (se wifi ok)
+//		- misurazione temperatura/umidità/presenza
+//		- pubblicazione info via mqtt
+//		- aggiornamento display (se previsto)
+//		- ricezione msg mqtt (per comanderia varia)
+//		- attivazione ventola/termocaldaia
+//		- [nel loop?] attivazione modalità config (seriale) su pressione pulsante
+//		- [nel loop?] lettura bottoni up/down (se previsti)
+//		- [nel setup] lettura file config e setup iniziale
 
-// TODO: PIR sensor
+// TODO: separare hw layer (in caso si usi altro da ESP8266)
 
 // TODO: "inglesizzare" variabili e funzioni
 
 // TODO: DHT sensor se manca non entrare in loop
 
-// TODO: JSON
-
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
+// [NO] JSON
 // [NO] Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
 // [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
@@ -158,7 +171,7 @@ String wifi = "";
 String ssid = "";
 String password = "";
 
-// TODO: ordinare le dichiarazioni variabili e gli include e i define
+// TODO: ordinare le dichiarazioni variabili e gli include e i define, PULIZIA CODICE
 
 #include "spiffs.h"
 #include "utils.h"
