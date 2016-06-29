@@ -15,11 +15,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 //////////////////////////////////////////////////////////////////////////////
-
 // per ArduinoIDE ricordarsi https://www.olimex.com/Products/IoT/ESP8266-EVB/resources/ESP8266-EVB-how-to-use-Arduino.pdf
-
 // per i GPIO: http://www.esp8266.com/wiki/doku.php?id=esp8266_gpio_pin_allocations
 
+// MAIN https://github.com/esp8266/Arduino
+// SPIFFS https://github.com/esp8266/Arduino/blob/master/doc/filesystem.md
+// SPIFFS plugin Download the tool: https://github.com/esp8266/arduino-esp8266fs-plugin/releases/download/0.2.0/ESP8266FS-0.2.0.zip.
 
 /*
  * devices:
@@ -27,89 +28,72 @@
  * 2) rilevatore temperatura+presenza (con PIR) (*)
  */
 
-// TODO: mqtt topic patterns
 
-// TODO: JSON
+// versione "termostato":
+// TODO: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
+// TODO: PIR sensor (presenza ospiti, decisione attivazione termostato)
+// TODO: LCD (bootstrapped), trovare elenco caratteri speciali (commands)
+// TODO: bottone selezione temperatura (su,giu)
+
+// TODO: integrare  TaskScheduler (https://github.com/arkhipenko/TaskScheduler)
+//		- blink led
+//		- connessione wifi
+//		- connessione mqtt (se wifi ok)
+//		- misurazione temperatura/umidità/presenza
+//		- pubblicazione info via mqtt
+//		- aggiornamento display (se previsto)
+//		- ricezione msg mqtt (per comanderia varia)
+//		- attivazione ventola/termocaldaia
+//		- [nel loop?] attivazione modalità config (seriale) su pressione pulsante
+//		- [nel loop?] lettura bottoni up/down (se previsti)
+//		- [nel setup] lettura file config e setup iniziale
+
+// TODO: separare hw layer (in caso si usi altro da ESP8266)
+
+// TODO: "inglesizzare" variabili e funzioni
+
+// TODO: DHT sensor se manca non entrare in loop
 
 // circa DONE: board per unire ESP+SDlogger+DHT+mosfet [esp8266-evb senza sdlogger]
 
-// Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
-// PIR: https://www.sparkfun.com/products/13285
+// [NO] JSON
+// [NO] Openlog (SD) https://www.sparkfun.com/products/9530   (3.3v)
+// [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
-
 // circa DONE: compatibilita' MQTT
+// TODO: mqtt topic patterns
 
 //////////////////////////////////////////////////
-#include "DHT.h"
-//#include "FastLED.h" NON COMPATIBILE
-//#include "Adafruit_WS2801.h" NON COMPATIBILE
-
-//////////////////////////////////////////////////
-#include <EEPROM.h>
-
-//// non vanno, mah, manca un include
-//#include <EEPROMVar.h>
-//#include <EEPROMEx.h>
-
-//////////////////////////////////////////////////
-#define DELAY_BLINK 30
-#define DELAY_LOOP 1000
-
-//////////////////////////////////////////////////
-#define DEBUG true
-
-
-//////////////////////////////////////////////////
-#define MAX_EEPROM 1024
-
-//////////////////////////////////////////////////
-//#define STATUS_CONFIG 0
-//#define STATUS_NORMAL 99
-//int status=STATUS_NORMAL; //default
-// non c'e' bisogno di una variabile se abbiamo solo normale/setup
-
-// TODO: gestione stato (forse no, tanto c'e' solo normale/config) [LOW_PRI]
-
-//////////////////////////////////////////////////
-//#define TESTLED 16
-// 13 ok
-// 14 ok
-// 15 ok (non diretto sui pin che ho saldato)
-// 16 ok
-
-#define RELAY 5
-#define LEDPIN 16
-
-#include <ESP8266WiFi.h>
-#include <PubSubClient.h>
-
-// Update these with values suitable for your network.
-#include "wifi-secrets.h"
-
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
 //String mqtt_server = "broker.mqtt-dashboard.com";
-String mqtt_server = "test.mosquitto.org";
+//String mqtt_server = "test.mosquitto.org";
+String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
 
-WiFiClient espClient;
+// mosquitto_sub -v -h test.mosquitto.org -t Termuinator18fe34a206e
 
 byte mac[6];
 
-PubSubClient client(espClient);
+#define TOPIC "Termuinator"  //TODO: renderlo configurabile
+String nomeNodo;  //poi viene accodato il mac
 
+int tempSoglia=26;
+int finestraIsteresi=2;
+float humidity,temperature,fahreneit,hif,hic;
+boolean acceso=false;
 
-// per mqtt
-long lastMsg = 0;
+#define EFFICIENTATORE	'e'
+#define TERMOSTATO		't'
+char modalita=EFFICIENTATORE;
 
-#define MSG_LEN 150
-char msg[MSG_LEN];
+#define ON	HIGH
+#define OFF	LOW
 
-//int value = 0;
-
-
-
-////////////////////////////////////////////////////////
+//////////////////////////////////////////////////
+#include "DHT.h"
+//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
+//#include "Adafruit_WS2801.h" NON COMPATIBILE
 // Uncomment whatever type you're using!
 #define DHTTYPE DHT11   // DHT 11
 //#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
@@ -131,8 +115,68 @@ char msg[MSG_LEN];
 // Note that older versions of this library took an optional third parameter to
 // tweak the timings for faster processors.  This parameter is no longer needed
 // as the current DHT reading algorithm adjusts itself to work on faster procs.
-DHT dht(DHTPIN, DHTTYPE);
+                 DHT dht(DHTPIN, DHTTYPE);
 
+//////////////////////////////////////////////////
+#define DELAY_BLINK 30
+#define DELAY_LOOP 5000
+#define DELAY_MQTT 9000
+
+//////////////////////////////////////////////////
+#define DEBUG true
+
+//////////////////////////////////////////////////
+//#define STATUS_CONFIG 0
+//#define STATUS_NORMAL 99
+//int status=STATUS_NORMAL; //default
+// non c'e' bisogno di una variabile se abbiamo solo normale/setup
+// TODO: gestione stato (forse no, tanto c'e' solo normale/config) [LOW_PRI]
+
+//////////////////////////////////////////////////
+//#define TESTLED 16
+// 13 ok
+// 14 ok
+// 15 ok (non diretto sui pin che ho saldato)
+// 16 ok
+
+#define RELAY 5
+#define LEDPIN 16
+
+#define BUTTON 0
+
+///////////////////////////////////////////////////
+#include <SoftwareSerial.h>
+#define LCD 14
+SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
+
+///////////////////////////////////////////////////
+//https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#wifiesp8266wifi-library
+//https://www.arduino.cc/en/Reference/WiFi
+#include <ESP8266WiFi.h>
+WiFiClient espClient;
+IPAddress gateway;
+
+#define WIFI_TENTATIVI 100
+#define USE_GW "[gw]"
+
+///////////////////////////////////////////////////
+#include <PubSubClient.h>  // mqtt
+PubSubClient mqtt_client(espClient);
+long lastMsg = 0;
+#define MSG_LEN 150
+char msg[MSG_LEN];
+
+///////////////////////////////////////////////////
+String wifi = "";
+String ssid = "";
+String password = "";
+
+// TODO: ordinare le dichiarazioni variabili e gli include e i define, PULIZIA CODICE
+
+#include "spiffs.h"
+#include "utils.h"
+
+////////////////////////////////////////////////////////
 /* TODO: aggiornare!!!
  * parametri config (nel file TERMU.INI) [ORA VIA SERIALE] [non in ordine]
  * 1) broker
@@ -142,260 +186,58 @@ DHT dht(DHTPIN, DHTTYPE);
  * 5) finestraIsteresi
  */
 
-// variabili perche' dovranno essere configurabili a runtime
-#define TOPIC "Termuinator"
-String nomeNodo;  //poi viene accodato il mac
-int tempSoglia=26;
-int finestraIsteresi=2;
-float humidity,temperature,fahreneit,hif,hic;
-int cursor=0; // for EEPROM
-
-
 //////////////////////////////////////////
-
-void eeprom_writeString(String s) {
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" to write @");
-        Serial.println(cursor);
-    }
-
-    EEPROM.put(cursor,s.c_str());
-
-    if(DEBUG) {
-        Serial.print((char)EEPROM.read(cursor-1));
-    }
-
-    cursor+=s.length();
-
-    //EEPROM.write(cursor,0); //null char
-    //cursor++;
-
-    EEPROM.commit();
-
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" written @");
-        Serial.println(cursor);
-    }
-}
-
-
-String eeprom_readString() {
-    if(DEBUG) {
-        Serial.print("reading @");
-        Serial.println(cursor);
-    }
-
-    String s="";
-    char c=0;
-    while(
-        (c=EEPROM.read(cursor))!=0
-    ) {
-        if(DEBUG)Serial.println(s);
-
-        s.concat(c);
-        cursor++;
-    }
-
-
-    if(DEBUG) {
-        Serial.print(s);
-        Serial.print(" read, now @");
-        Serial.println(cursor);
-    }
-    return s;
-}
-
-
-void eeprom_seek(int c) {
-    if(DEBUG) {
-        Serial.print("seek cursor:");
-        Serial.println(cursor);
-    }
-
-    if (c<0) cursor=0;
-    else if(c>MAX_EEPROM) cursor=MAX_EEPROM;
-    else
-        cursor=c;
-
-    if(DEBUG) {
-        Serial.print("seek cursor:");
-        Serial.println(cursor);
-    }
-}
-
-void eeprom_seek() {
-    eeprom_seek(0);
-}
-
-void eeprom_debug_readAll() {
-    eeprom_seek();
-    for(int i=0; i<MAX_EEPROM; i++) {
-        Serial.print((char)EEPROM.read(i));
-    }
-    Serial.println();
-}
-
-/*
-void eeprom_writeInt(int i) {
-    EEPROM.write(cursor,i);
-    EEPROM.commit();
-    cursor+=s.length()+1; // null char?
-}
-
-int eeprom_readInt() {
-    int i=0;
-    EEPROM.get(cursor, i);
-    cursor+=sizeof(int);
-}
-*/
-
-
+// headers... // TODO: capire perche' non e' piu' indifferente l'ordine di definizione!!!
+//void wifi_setup();
+void node_config();
+int net_services();
 //////////////////////////////////////////
-
-void util_blinkLed(int i) {
-    digitalWrite(i,HIGH);
-    delay(DELAY_BLINK);
-    digitalWrite(i,LOW);
-    delay(DELAY_BLINK);
-}
-
-void util_blinkLed(int i,int repeat) {
-    for(int count=0; count<repeat; count++)
-        util_blinkLed(i);
-}
-
-void util_emptySerial() {
-    while (Serial.available()!=0) { // wait for input
-        delay(1);
-        Serial.read();
-    }
-}
-
-String util_input(String msg, String old) {
-    Serial.print("(");
-    Serial.print(old);
-    Serial.print(") ");
-
-    Serial.print(msg);				// prompt
-    while (Serial.available()==0) { // wait for input
-        delay(5);
-    }
-    String newS = Serial.readString();     // read input
-    newS.trim();
-
-    /*
-    Serial.print("input:");
-    Serial.print(newS);
-    Serial.print(" di lunghezza: ");
-    Serial.println(newS.length());
-    */
-
-    if(newS.length()==0) {
-        Serial.println(old);
-        util_emptySerial();
-        return old;
-    }
-    Serial.println(newS);
-    return newS;
-}
-
-
-void node_config() {
-    // TODO: uso eeprom per salvare i config data
-    // BEWARE:   https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#eeprom
-
-    util_emptySerial();
-
-    ssid=util_input("ssid: ",ssid);
-    password=util_input("psk: ",password);
-
-    mqtt_server=util_input("mqtt broker: ",mqtt_server);
-
-    tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
-    finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
-
-    // reboot
-    setup();
-}
-
-void util_printStatus() {
-    /*  Serial.print("S: ");
-        Serial.print(status);    */
-
-    Serial.print("NODE: ");
-    Serial.print(nomeNodo);
-
-    Serial.print(", SSID: ");
-    Serial.print(ssid);
-
-    //Serial.print(", PWD: ");
-    //Serial.print(pwdWifi);
-
-    Serial.print(", TEMPSOGLIA: ");
-    Serial.print(tempSoglia);
-
-    Serial.print(", ISTERESI: ");
-    Serial.print(finestraIsteresi);
-
-    Serial.print(", Humidity: ");
-    Serial.print(humidity);
-    Serial.print("%, ");
-
-    Serial.print("Temperature: ");
-    Serial.print(temperature);
-    Serial.print("C/");
-    Serial.print(fahreneit);
-    Serial.print("F, ");
-
-    Serial.print("Heat index: ");
-    Serial.print(hic);
-    Serial.print("C/");
-    Serial.print(hif);
-    Serial.print("F, ");
-
-    Serial.print(ESP.getFreeHeap(),DEC);
-    Serial.println(" mem");
-}
-
 
 void mqtt_reconnect() {
-    // TODO: nr. tentativi???  [LOW_PRI]
+    // TODO: nr. tentativi???  per forza perche' se non trova mqtt server non fa piu' nulla
+
+    // TODO: condizionare invio (altrove)
 
     // Loop until we're reconnected
-    while (!client.connected()) {
-        if(digitalRead(0)==LOW) { // tasto -> esce
-            break;
-        }
+    if (!mqtt_client.connected()) {
+
         Serial.print("Attempting MQTT connection...");
         // Attempt to connect
-        if (client.connect(nomeNodo.c_str())) {
+        if (mqtt_client.connect(nomeNodo.c_str())) {
             Serial.println("connected");
             // Once connected, publish an announcement...
-            client.publish(nomeNodo.c_str(), "first msg.");
+            mqtt_client.publish(nomeNodo.c_str(), "first msg.");
             // ... and resubscribe
-            //client.subscribe("termuinator2");
+            //mqtt_client.subscribe("termuinator2");
         } else {
             Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
+            Serial.print(mqtt_client.state());
+            Serial.println(" skipping MQTT...");
             // Wait 5 seconds before retrying
-            delay(5000);
+            //delay(5000);
         }
     }
 }
 
 //////////////////////////////////////////
 void loop() {
+    /*
+        SwSerial.print("loop...");
+        delay(100);
+    */
+
+    if (WiFi.status() != WL_CONNECTED) net_services();
 
     char str_temp[6];
     char str_hic[6];
     char str_humidity[6];
 
+    // test fs
+    //Serial.println(spiffs_getValue("/ssid"));
+
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
-    if(digitalRead(0)==LOW) { // tasto -> config
+    if(digitalRead(BUTTON)==LOW) { // tasto -> config
         node_config();
     }
 
@@ -420,11 +262,16 @@ void loop() {
 
     util_printStatus();
 
-    if(temperature>=tempSoglia)
-        digitalWrite(RELAY,HIGH);
+    switch(modalita) {
+    case EFFICIENTATORE:
+        if(temperature >= tempSoglia) util_switch(ON);
+        if(temperature <= (tempSoglia-finestraIsteresi)) util_switch(OFF);
+        break;
 
-    if(temperature<=(tempSoglia-finestraIsteresi))
-        digitalWrite(RELAY,LOW);
+    case TERMOSTATO:
+        if(temperature <= tempSoglia) util_switch(ON);
+        if(temperature >= (tempSoglia+finestraIsteresi)) util_switch(OFF);
+    }
 
     /*
       mySerial.print("ls");
@@ -440,49 +287,196 @@ void loop() {
     //Serial.print(mySerial.read());
 
 
-    ///////////////////////////////////////
-    // MQTT
-    if (!client.connected()) {
-        mqtt_reconnect();
+
+    if (WiFi.status() == WL_CONNECTED) {
+
+        ///////////////////////////////////////
+        // MQTT
+        if (!mqtt_client.connected()) {
+            mqtt_reconnect();
+        }
+
+
+        if (mqtt_client.connected()) {
+            mqtt_client.loop();
+
+            long now = millis();
+            if (now - lastMsg > DELAY_MQTT) {
+                lastMsg = now;
+                dtostrf(temperature, 4, 2, str_temp);
+                dtostrf(hic, 4, 2, str_hic);
+                dtostrf(humidity, 4, 2, str_humidity);
+                snprintf (msg, MSG_LEN,
+                          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
+                          str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
+                // Serial.println(msg);
+                if (mqtt_client.publish(nomeNodo.c_str(), msg)) {
+                    Serial.println("info: MQTT message succesfully published");
+                } else {
+                    Serial.println("error: MQTT publishing error (connection error or message too large)");
+                }
+            }
+        }
     }
-    client.loop();
-
-    long now = millis();
-    if (now - lastMsg > 2000) {
-        lastMsg = now;
-        dtostrf(temperature, 4, 2, str_temp);
-        dtostrf(hic, 4, 2, str_hic);
-        dtostrf(humidity, 4, 2, str_humidity);
-        snprintf (msg, MSG_LEN, 
-          "{\"_type\":\"termuinator\",\"t\":%s,\"t_t\":%d,\"his\":%d,\"hum\":\"%s\",\"h_index\":%s}",
-            str_temp,tempSoglia,finestraIsteresi,str_humidity,str_hic);
-        // Serial.println(msg);
-        if (client.publish(nomeNodo.c_str(), msg)){
-         Serial.println("info: MQTT message succesfully published");
-        } else { 
-          Serial.println("error: MQTT publishing error (connection error or message too large)");
-        };
-    }
-    ///////////////////////////////////////
-
-
 
     delay(DELAY_LOOP);
 }
 
+boolean wifi_setup() {
+    delay(100);
+
+    // We start by connecting to a WiFi network
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    WiFi.disconnect();
+    WiFi.begin(ssid.c_str(), password.c_str());
+
+    for (int i=0; (WiFi.status() != WL_CONNECTED) && (i < WIFI_TENTATIVI) && digitalRead(0)==HIGH; i++) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    if(WiFi.status() == WL_CONNECTED) {
+        Serial.println();
+        Serial.println("WiFi connected");
+        Serial.println("IP address: ");
+        Serial.println(WiFi.localIP());
+
+        gateway=WiFi.gatewayIP();
+
+        if(mqtt_server.equals(USE_GW)) mqtt_server=String(gateway[0])+"."+String(gateway[1])+"."+String(gateway[2])+"."+String(gateway[3]);
+
+        Serial.println(gateway);
+
+        //char n[nodo.length()];
+        //nomeNodo=n;
+        //Serial.println(nodo);
+        return true;
+    }
+    else {
+        Serial.println("WiFi FAILED!");
+        return false;
+    }
+}
+
+int net_services() {
+    Serial.println("entro in net services");
+    if(wifi.startsWith("y")) {
+
+        // wifi (dip. da parametri)
+        if(wifi_setup()) {
 
 
+            // DONE: deve funzionare anche senza broker, quindi check se bloccante!!! fatto, nel senso che abbiamo messo la reconnect monotentativo
+            // mqtt (dip. da parametri)
+            mqtt_client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
+            //mqtt_client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
 
+            Serial.println("mqtt set");
+            return 0;
+        }
+        Serial.println("mqtt NOT set");
+        return -1;
+    }
+    else {
+        Serial.print("wifi enabled? ");
+        Serial.println(wifi);
+        return -2;
+    }
+}
 
+/*
+void mqtt_callback(char* topic, byte* payload, unsigned int length) {
+    Serial.print("Message arrived [");
+    Serial.print(topic);
+    Serial.print("] ");
+    for (int i = 0; i < length; i++) {
+        Serial.print((char)payload[i]);
+    }
+    Serial.println();
 
+    // Switch on the LED if an 1 was received as first character
+    if ((char)payload[0] == '1') {
+        digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
+        // but actually the LED is on; this is because
+        // it is acive low on the ESP-01)
+    } else {
+        digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+    }
 
+}
+*/
 
+void node_config() {
+    util_emptySerial();
 
+    wifi=util_input("wifi enable: ",wifi);
+    ssid=util_input("ssid: ",ssid);
+    password=util_input("psk: ",password);
 
+    mqtt_server=util_input("mqtt broker: ",mqtt_server);
 
+    modalita=util_input("modalita (e/t): ",String(modalita)).charAt(0);
 
+    tempSoglia=util_input("t-soglia: ",String(tempSoglia)).toInt();
+    finestraIsteresi=util_input("isteresi: ",String(finestraIsteresi)).toInt();
 
+    spiffs_writeValues();
 
+    // restart services
+    net_services();
+}
+
+//////////////////////////////////////////
+void setup() {
+    Serial.begin(115200);
+    Serial.println("Booting...");
+
+    SwSerial.begin(9600);
+    SwSerial.println("booting...");
+
+    if(DEBUG)
+        util_printStatus();
+
+    util_blinkLed(LEDPIN,10);
+
+    pinMode(RELAY, OUTPUT);
+    pinMode(LEDPIN, OUTPUT);
+    pinMode(DHTPIN, INPUT);
+    pinMode(0, INPUT_PULLUP); //per cambio stato
+
+    // filesystem
+    SPIFFS.begin();
+    spiffs_getValues();
+
+    if(DEBUG)
+        util_printStatus();
+
+    // sensor
+    dht.begin();
+
+    //net_services();
+    Serial.println("MAC address: ");
+    WiFi.macAddress(mac);
+    nomeNodo=TOPIC;
+    Serial.print("MAC=");
+    for (int i=0; i<6; i++) {
+        nomeNodo += String(mac[i],HEX);
+        Serial.print(mac[i],HEX);
+        Serial.print(":");
+    }
+    Serial.println(nomeNodo);
+    WiFi.disconnect();
+
+    // "ammuina" per dare feedback al boot
+    util_blinkLed(LEDPIN,10);
+    util_blinkLed(RELAY,10);
+    util_blinkLed(LEDPIN,10);
+
+    Serial.println("Booted!");
+}
 
 
 
@@ -512,105 +506,3 @@ void loop() {
   - Select your ESP8266 in "Tools -> Board"
 
 */
-
-
-
-void wifi_setup() {
-    delay(10);
-
-    // We start by connecting to a WiFi network
-    Serial.println();
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
-
-    WiFi.begin(ssid.c_str(), password.c_str());
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-
-    Serial.println();
-    Serial.println("WiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
-    Serial.println("MAC address: ");
-
-    WiFi.macAddress(mac);
-
-    nomeNodo=TOPIC;
-    Serial.print("MAC=");
-    for (int i=0; i<6; i++) {
-        nomeNodo += String(mac[i],HEX);
-        Serial.print(mac[i],HEX);
-        Serial.print(":");
-    }
-    Serial.println(nomeNodo);
-
-    //char n[nodo.length()];
-    //nomeNodo=n;
-    //Serial.println(nodo);
-}
-
-/*
-void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-    Serial.print("Message arrived [");
-    Serial.print(topic);
-    Serial.print("] ");
-    for (int i = 0; i < length; i++) {
-        Serial.print((char)payload[i]);
-    }
-    Serial.println();
-
-    // Switch on the LED if an 1 was received as first character
-    if ((char)payload[0] == '1') {
-        digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-        // but actually the LED is on; this is because
-        // it is acive low on the ESP-01)
-    } else {
-        digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-    }
-
-}
-*/
-
-//////////////////////////////////////////
-void setup() {
-    EEPROM.begin(MAX_EEPROM); //MAX DIM EEPROM ON ESP8266
-
-    util_blinkLed(LEDPIN,10);
-
-    Serial.begin(115200);
-    Serial.println("Booting...");
-
-
-    eeprom_writeString("minnie");
-    eeprom_writeString("paperoga");
-    eeprom_seek(0);
-
-
-    pinMode(RELAY, OUTPUT);
-    pinMode(LEDPIN, OUTPUT);
-    pinMode(DHTPIN, INPUT);
-    pinMode(0, INPUT_PULLUP); //per cambio stato
-
-    dht.begin();
-
-    wifi_setup();
-
-    client.setServer(mqtt_server.c_str(), 1883);
-    //client.setCallback(mqtt_callback);
-
-    // per dare feedback al boot
-    util_blinkLed(LEDPIN,10);
-    util_blinkLed(RELAY,10);
-    util_blinkLed(LEDPIN,10);
-
-	eeprom_debug_readAll();
-    /*
-    Serial.println(eeprom_readString());
-    Serial.println(eeprom_readString());
-    */
-
-    Serial.println("Booted!");
-}
