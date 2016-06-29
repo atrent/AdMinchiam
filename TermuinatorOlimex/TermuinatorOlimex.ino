@@ -62,7 +62,7 @@ String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
 
 byte mac[6];
 
-#define TOPIC "Termuinator"
+#define TOPIC "Termuinator"  //TODO: renderlo configurabile
 String nomeNodo;  //poi viene accodato il mac
 
 int tempSoglia=26;
