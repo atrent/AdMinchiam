@@ -9,6 +9,7 @@ Brokers can be bridged (federated), topics can be mapped, there could be a hiera
 Info about the MQTT broker to connect to can be sent via dhcp info (see http://www.networksorcery.com/enp/protocol/bootp/options.htm)
 
 
+
 Topic
 -----
 
