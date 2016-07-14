@@ -24,9 +24,9 @@ void util_emptySerial() {
 }
 
 String util_input(String msg, String old) {
-    Serial.print("(");
+    Serial.print(F("("));
     Serial.print(old);
-    Serial.print(") ");
+    Serial.print(F(") "));
 
     Serial.print(msg);				// prompt
     while (Serial.available()==0) { // wait for input
@@ -58,51 +58,53 @@ void util_printStatus() {
 
     SwSerial.println(nomeNodo);
 
-    Serial.print("NODE: ");
+    Serial.print(F("NODE: "));
     Serial.print(nomeNodo);
 
-    Serial.print(", wifi enabled: ");
+    Serial.print(F(", wifi enabled: "));
     Serial.print(wifi);
 
-    Serial.print(", SSID: ");
+    Serial.print(F(", SSID: "));
     Serial.print(ssid);
 
-    Serial.print(", PSK: ");
+    Serial.print(F(", PSK: "));
     Serial.print(password);
 
-    Serial.print(", mqtt: ");
+    Serial.print(F(", mqtt: "));
     Serial.print(mqtt_server);
 
-    Serial.print(", TEMPSOGLIA: ");
+    Serial.print(F(", TEMPSOGLIA: "));
     Serial.print(tempSoglia);
 
-    Serial.print(", ISTERESI: ");
+    Serial.print(F(", ISTERESI: "));
     Serial.print(finestraIsteresi);
 
-    Serial.print(", acceso=: ");
+    Serial.print(F(", acceso=: "));
     Serial.print(acceso);
 
-    Serial.print(", Humidity: ");
+    Serial.print(F(", Humidity: "));
     Serial.print(humidity);
-    Serial.print("%, ");
+    Serial.print(F("%, "));
 
-    Serial.print("Temperature: ");
+    Serial.print(F("Temperature: "));
     Serial.print(temperature);
-    Serial.print("C/");
+    Serial.print(F("C/"));
     Serial.print(fahreneit);
-    Serial.print("F, ");
+    Serial.print(F("F, "));
 
-    Serial.print("Heat index: ");
+    Serial.print(F("Heat index: "));
     Serial.print(hic);
-    Serial.print("C/");
+    Serial.print(F("C/"));
     Serial.print(hif);
-    Serial.print("F, ");
+    Serial.print(F("F, "));
 
     Serial.print(ESP.getFreeHeap(),DEC);
-    Serial.println(" mem");
+    Serial.println(F(" mem"));
 }
 
 
 
 
 // TODO: qualche funzione per mostrare roba su lcd
+
+//34376
