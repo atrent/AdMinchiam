@@ -1,1 +1,28 @@
-=== TERMUINATOR, inventario hw4 gio + 3 atrent* ESP8266 con rele' (Olimex)* sensore temp/humid DHT11/22* connettore DB9 (sembrerebbe femmina ma verificare sui vari USB2serial)* power supply switching (12V+5V)* Jack alimentazione ESP8266* (opzionale) PIR* (opzionale) LED display (e.g. per modalità termostato programmabile)* (opzionale) bottone "reset" da portare fuori (solo per programmazione)* LED per notifiche con portaled* cavetteria varia piccola (5V/12V)* fascetteria varia* ventola/e (220V o 12V)* grate ventola* telaio/supporto (varie versioni)* staffe o altro per aggancio a termosifone* viteria varia* scatola (varie dimensioni)* cavo 220 con spina* interruttore alimentazione globale- saldare pettine a lato e saldare piedino alto sx (GPIO4/SCL) per DHT
+=== TERMUINATOR, inventario hw
+
+4 gio + 3 atrent
+
+* ESP8266 con rele' (Olimex)
+* sensore temp/humid DHT11/22
+* connettore DB9 (sembrerebbe femmina ma verificare sui vari USB2serial)
+* power supply switching (12V+5V)
+* Jack alimentazione ESP8266
+* (opzionale) PIR
+* (opzionale) LED display (e.g. per modalità termostato programmabile)
+* (opzionale) bottone "reset" da portare fuori (solo per programmazione)
+* LED per notifiche con portaled
+* cavetteria varia piccola (5V/12V)
+* fascetteria varia
+* ventola/e (220V o 12V)
+* grate ventola
+* telaio/supporto (varie versioni)
+* staffe o altro per aggancio a termosifone
+* viteria varia
+* scatola (varie dimensioni)
+* cavo 220 con spina
+* interruttore alimentazione globale
+
+
+
+
+- saldare pettine a lato e saldare piedino alto sx (GPIO4/SCL) per DHT
