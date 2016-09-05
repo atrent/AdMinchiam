@@ -1,28 +1,82 @@
-=== TERMUINATOR, inventario hw
+notes: 4 gio + 3 atrent
 
-4 gio + 3 atrent
+components:
+ - ESP8266 con rele'
+   vendor: Olimex
+   model: ESP8266-EVB
+    price: 10€
+   qty-a: 4
+   qty-g: 5
+ - sensore temp/humid
+   vendor: various
+   model: DHT11
+    note: precisione di 1 grado C
+    price: 3€
+   alternative: 
+    model: DHT22
+    notes: precisione di 0.5 gradi C
+    price: 5€
+   qty-a: 2
+   qty-g: 1
+ - connettore DB9 femmina
+   model: any
+    price: 0.5€ 
+   qty-a: 10
+ - power supply switching in 220V out 5V 500mA
+   notes: per modello con ventole a 220V
+   model: any
+    price: 5€
+   alternative:
+    model: any 12V+5V
+    notes: 12V per le ventile a 12V and 5V per ESP8266
+    price: 15€
+    qty-a: 2
+    qty-g: 2
+ - Jack alimentazione ESP8266 
+   model: (inner: 2.1mm, outer: 5.5mm, len: 10-14mm) 
+    price: 0.5€
+   qty-a: 1
+ - LED (per notifiche stato)
+   model: any
+    price: 0.1€
+ - portaled
+   model: any
+    price: 0.5€
+   qty-a: 1
+ - cavetteria varia piccola (5V/12V)
+ - fascetteria varia
+ - ventola 220V dia 140mm (coppia)
+   model: any
+    price: 
+   qty-a: 2
+ - ventola 12V dia 140mm
+   model: any
+    price: 15€
+   qty-a: 1
+   qty-g: 1
+ - grate ventola dia 140mm
+   model: any
+    price: 
+   qty-a: 8
+   qty-g: 2
+ - telaio/supporto (varie versioni)
+   model: custom made
+   qty-a: 4
+   qty-g: 1
+ - staffe o altro per aggancio a termosifone
+   model: custom made
+ - viteria varia
+ - scatola (varie dimensioni)
+ - cavo 220 con spina
+ - interruttore alimentazione globale
 
-* ESP8266 con rele' (Olimex)
-* sensore temp/humid DHT11/22
-* connettore DB9 (sembrerebbe femmina ma verificare sui vari USB2serial)
-* power supply switching (12V+5V)
-* Jack alimentazione ESP8266
-* (opzionale) PIR
-* (opzionale) LED display (e.g. per modalità termostato programmabile)
-* (opzionale) bottone "reset" da portare fuori (solo per programmazione)
-* LED per notifiche con portaled
-* cavetteria varia piccola (5V/12V)
-* fascetteria varia
-* ventola/e (220V o 12V)
-* grate ventola
-* telaio/supporto (varie versioni)
-* staffe o altro per aggancio a termosifone
-* viteria varia
-* scatola (varie dimensioni)
-* cavo 220 con spina
-* interruttore alimentazione globale
+optional-components:
+ - PIR
+   qty-a: 9
+ - LED display (e.g. per modalità termostato programmabile)
+   qty-a: 3
+ - bottone "reset" da portare fuori (solo per programmazione)
+   qty-a: 1
 
-
-
-
-- saldare pettine a lato e saldare piedino alto sx (GPIO4/SCL) per DHT
+operations:
+ - saldare pettine a lato e saldare piedino alto sx (GPIO5/SCL) per DHT
