@@ -50,6 +50,10 @@
 //		- [nel loop?] lettura bottoni up/down (se previsti)
 //		- [nel setup] lettura file config e setup iniziale
 
+//Termuinator18fe34a206e
+// mosquitto_sub -v -h broker.mqtt-dashboard.com -t Termuinator18fe34a206e
+// mosquitto_sub -v -h test.mosquitto.org -t Termuinator18fe34a206e
+
 // TODO: separare hw layer (in caso si usi altro da ESP8266)
 
 // TODO: "inglesizzare" variabili e funzioni
