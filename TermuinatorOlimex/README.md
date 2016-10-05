@@ -15,3 +15,15 @@ Note sparse
     “2M (1M SPIFFS)”
     Upload Speed:
     “115200”
+
+
+
+
+TODO
+=============
+
+STANDBY fritzing (trovare parts library)
+
+DONE spiffs plugin (url nel codice)
+
+documentazione di cosa installare

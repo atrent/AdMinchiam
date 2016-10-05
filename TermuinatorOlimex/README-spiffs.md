@@ -1,4 +1,4 @@
-qui creare i file:
+in 'data' creare i file:
 
 broker
 isteresi

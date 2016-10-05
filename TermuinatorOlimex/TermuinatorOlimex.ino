@@ -35,6 +35,8 @@
 // TODO: LCD (bootstrapped), trovare elenco caratteri speciali (commands)
 // TODO: bottone selezione temperatura (su,giu)
 
+// TODO: convertire tutte le stringhe chiamando macro F()
+
 // TODO: integrare  TaskScheduler (https://github.com/arkhipenko/TaskScheduler)
 //		- blink led
 //		- connessione wifi
@@ -61,22 +63,11 @@
 // [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
-// MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
-// circa DONE: compatibilita' MQTT
-// TODO: mqtt topic patterns
 
-//////////////////////////////////////////////////
-//const char* mqtt_server = "broker.mqtt-dashboard.com";
-//String mqtt_server = "broker.mqtt-dashboard.com";
-//String mqtt_server = "test.mosquitto.org";
-String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
 
-// mosquitto_sub -v -h test.mosquitto.org -t Termuinator18fe34a206e
+byte mac[6];  // TODO: verificare dove lo usiamo
 
-byte mac[6];
-
-#define TOPIC "Termuinator"  //TODO: renderlo configurabile
-String nomeNodo;  //poi viene accodato il mac
+String nomeNodo;  //poi viene accodato il mac // TODO: check uso
 
 int tempSoglia=26;
 int finestraIsteresi=2;
@@ -90,37 +81,10 @@ char modalita=EFFICIENTATORE;
 #define ON	HIGH
 #define OFF	LOW
 
-//////////////////////////////////////////////////
-#include "DHT.h"
-//#include "FastLED.h" NON COMPATIBILE (TODO: re-check)
-//#include "Adafruit_WS2801.h" NON COMPATIBILE
-// Uncomment whatever type you're using!
-#define DHTTYPE DHT11   // DHT 11
-//#define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
-//#define DHTTYPE DHT21   // DHT 21 (AM2301)
-////////////////////////////////////////////////////////
-//#define DHTPIN 0     // ESP OK in parallelo col bottone
-//#define DHTPIN 12     // ESP OK corrisponde a 7 su connettore UEXT
-#define DHTPIN 4     // ...
-//#define DHTPIN 16     // riprovo gpio16, corrisponde a pin 13, NON FUNZIONA con DHT, pero' il LED funzia
-////////////////////////////////////////////////////////
-// Connect pin 1 (on the left) of the sensor to +5V
-// NOTE: If using a board with 3.3V logic like an Arduino Due connect pin 1
-// to 3.3V instead of 5V!
-// Connect pin 2 of the sensor to whatever your DHTPIN is
-// Connect pin 4 (on the right) of the sensor to GROUND
-// Connect a 10K resistor from pin 2 (data) to pin 1 (power) of the sensor
-
-// Initialize DHT sensor.
-// Note that older versions of this library took an optional third parameter to
-// tweak the timings for faster processors.  This parameter is no longer needed
-// as the current DHT reading algorithm adjusts itself to work on faster procs.
-                 DHT dht(DHTPIN, DHTTYPE);
 
 //////////////////////////////////////////////////
 #define DELAY_BLINK 30
 #define DELAY_LOOP 5000
-#define DELAY_MQTT 9000
 
 //////////////////////////////////////////////////
 #define DEBUG true
@@ -145,79 +109,30 @@ char modalita=EFFICIENTATORE;
 #define BUTTON 0
 
 ///////////////////////////////////////////////////
-#include <SoftwareSerial.h>
-#define LCD 14
-SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
+//#include <SoftwareSerial.h>
+//#define LCD 14
+//SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
 
-///////////////////////////////////////////////////
-//https://github.com/esp8266/Arduino/blob/master/doc/libraries.md#wifiesp8266wifi-library
-//https://www.arduino.cc/en/Reference/WiFi
-#include <ESP8266WiFi.h>
-WiFiClient espClient;
-IPAddress gateway;
 
-#define WIFI_TENTATIVI 100
-#define USE_GW "[gw]"
-
-///////////////////////////////////////////////////
-#include <PubSubClient.h>  // mqtt
-PubSubClient mqtt_client(espClient);
-long lastMsg = 0;
-#define MSG_LEN 150
-char msg[MSG_LEN];
-
-///////////////////////////////////////////////////
-String wifi = "";
-String ssid = "";
-String password = "";
 
 // TODO: ordinare le dichiarazioni variabili e gli include e i define, PULIZIA CODICE
-
+String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
+#include "wifi.h"
+#include "mqtt.h"
 #include "spiffs.h"
 #include "utils.h"
+#include "dht.h"
 
-////////////////////////////////////////////////////////
-/* TODO: aggiornare!!!
- * parametri config (nel file TERMU.INI) [ORA VIA SERIALE] [non in ordine]
- * 1) broker
- * 2) ssid  //forse anche metodo (WPA/etc.)?
- * 3) password
- * 4) tempSoglia
- * 5) finestraIsteresi
- */
 
 //////////////////////////////////////////
 // headers... // TODO: capire perche' non e' piu' indifferente l'ordine di definizione!!!
 //void wifi_setup();
-void node_config();
-int net_services();
+void configFromSerialToSpiffs();
+int wifiAndMqttOn();
 //////////////////////////////////////////
 
-void mqtt_reconnect() {
-    // TODO: nr. tentativi???  per forza perche' se non trova mqtt server non fa piu' nulla
 
-    // TODO: condizionare invio (altrove)
 
-    // Loop until we're reconnected
-    if (!mqtt_client.connected()) {
-
-        Serial.print("Attempting MQTT connection...");
-        // Attempt to connect
-        if (mqtt_client.connect(nomeNodo.c_str())) {
-            Serial.println("connected");
-            // Once connected, publish an announcement...
-            mqtt_client.publish(nomeNodo.c_str(), "first msg.");
-            // ... and resubscribe
-            //mqtt_client.subscribe("termuinator2");
-        } else {
-            Serial.print("failed, rc=");
-            Serial.print(mqtt_client.state());
-            Serial.println(" skipping MQTT...");
-            // Wait 5 seconds before retrying
-            //delay(5000);
-        }
-    }
-}
 
 //////////////////////////////////////////
 void loop() {
@@ -226,7 +141,7 @@ void loop() {
         delay(100);
     */
 
-    if (WiFi.status() != WL_CONNECTED) net_services();
+    if (WiFi.status() != WL_CONNECTED) wifiAndMqttOn();
 
     char str_temp[6];
     char str_hic[6];
@@ -238,7 +153,7 @@ void loop() {
     util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     if(digitalRead(BUTTON)==LOW) { // tasto -> config
-        node_config();
+        configFromSerialToSpiffs();
     }
 
     // Reading temperature or humidity takes about 250 milliseconds!
@@ -322,46 +237,8 @@ void loop() {
     delay(DELAY_LOOP);
 }
 
-boolean wifi_setup() {
-    delay(100);
 
-    // We start by connecting to a WiFi network
-    Serial.println();
-    Serial.print("Connecting to ");
-    Serial.println(ssid);
-
-    WiFi.disconnect();
-    WiFi.begin(ssid.c_str(), password.c_str());
-
-    for (int i=0; (WiFi.status() != WL_CONNECTED) && (i < WIFI_TENTATIVI) && digitalRead(0)==HIGH; i++) {
-        delay(500);
-        Serial.print(".");
-    }
-
-    if(WiFi.status() == WL_CONNECTED) {
-        Serial.println();
-        Serial.println("WiFi connected");
-        Serial.println("IP address: ");
-        Serial.println(WiFi.localIP());
-
-        gateway=WiFi.gatewayIP();
-
-        if(mqtt_server.equals(USE_GW)) mqtt_server=String(gateway[0])+"."+String(gateway[1])+"."+String(gateway[2])+"."+String(gateway[3]);
-
-        Serial.println(gateway);
-
-        //char n[nodo.length()];
-        //nomeNodo=n;
-        //Serial.println(nodo);
-        return true;
-    }
-    else {
-        Serial.println("WiFi FAILED!");
-        return false;
-    }
-}
-
-int net_services() {
+int wifiAndMqttOn() {
     Serial.println("entro in net services");
     if(wifi.startsWith("y")) {
 
@@ -387,29 +264,9 @@ int net_services() {
     }
 }
 
-/*
-void mqtt_callback(char* topic, byte* payload, unsigned int length) {
-    Serial.print("Message arrived [");
-    Serial.print(topic);
-    Serial.print("] ");
-    for (int i = 0; i < length; i++) {
-        Serial.print((char)payload[i]);
-    }
-    Serial.println();
 
-    // Switch on the LED if an 1 was received as first character
-    if ((char)payload[0] == '1') {
-        digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-        // but actually the LED is on; this is because
-        // it is acive low on the ESP-01)
-    } else {
-        digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-    }
-
-}
-*/
-
-void node_config() {
+void configFromSerialToSpiffs() {
+	
     util_emptySerial();
 
     wifi=util_input("wifi enable: ",wifi);
@@ -426,7 +283,7 @@ void node_config() {
     spiffs_writeValues();
 
     // restart services
-    net_services();
+    wifiAndMqttOn();
 }
 
 //////////////////////////////////////////
@@ -434,8 +291,10 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Booting...");
 
+	/*
     SwSerial.begin(9600);
     SwSerial.println("booting...");
+    */
 
     if(DEBUG)
         util_printStatus();
@@ -457,7 +316,7 @@ void setup() {
     // sensor
     dht.begin();
 
-    //net_services();
+    //wifiAndMqttOn();
     Serial.println("MAC address: ");
     WiFi.macAddress(mac);
     nomeNodo=TOPIC;
@@ -477,32 +336,3 @@ void setup() {
 
     Serial.println("Booted!");
 }
-
-
-
-
-
-/*
- Basic ESP8266 MQTT example
-
- This sketch demonstrates the capabilities of the pubsub library in combination
- with the ESP8266 board/library.
-
- It connects to an MQTT server then:
-  - publishes "hello world" to the topic "outTopic" every two seconds
-  - subscribes to the topic "inTopic", printing out any messages
-    it receives. NB - it assumes the received payloads are strings not binary
-  - If the first character of the topic "inTopic" is an 1, switch ON the ESP Led,
-    else switch it off
-
- It will reconnect to the server if the connection is lost using a blocking
- reconnect function. See the 'mqtt_reconnect_nonblocking' example for how to
- achieve the same result without blocking the main loop.
-
- To install the ESP8266 board, (using Arduino 1.6.4+):
-  - Add the following 3rd party board manager under "File -> Preferences -> Additional Boards Manager URLs":
-       http://arduino.esp8266.com/stable/package_esp8266com_index.json
-  - Open the "Tools -> Board -> Board Manager" and click install for the ESP8266"
-  - Select your ESP8266 in "Tools -> Board"
-
-*/

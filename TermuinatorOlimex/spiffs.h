@@ -3,6 +3,21 @@
 
 #include <FS.h>
 
+
+
+////////////////////////////////////////////////////////
+/* TODO: aggiornare!!!
+ * parametri config (nel file TERMU.INI) [ORA VIA SERIALE] [non in ordine]
+ * 1) broker
+ * 2) ssid  //forse anche metodo (WPA/etc.)?
+ * 3) password
+ * 4) tempSoglia
+ * 5) finestraIsteresi
+ */
+
+
+
+
 // TODO: passare a file "properties" (stile .ini ma senza stanze)
 
 // TODO: caratteri spurii nella stringa

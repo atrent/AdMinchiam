@@ -101,3 +101,6 @@ https://startpage.com/do/search?query=esp8266+MEM+CHECK+FAIL!!!&cat=web&pl=chrom
 
 - imparare a programmare esp
 - lib wifi
+
+
+- documentare come fare fs spiffs (memo plugin per ide)

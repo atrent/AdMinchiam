@@ -126,7 +126,7 @@ void eeprom_debug_readAllStrings() {
 }
 
 void eeprom_debug_readAll() {
-    Serial.println("ALL MEM");
+    Serial.println(F("ALL MEM"));
     eeprom_seekZero();
     for(int i=0; i<EEPROM_MAX; i++) {
         int c=eeprom_read();
