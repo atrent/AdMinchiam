@@ -56,7 +56,7 @@ void util_printStatus() {
         Serial.print(status);    */
 
 
-    SwSerial.println(nomeNodo);
+    //SwSerial.println(nomeNodo);
 
     Serial.print(F("NODE: "));
     Serial.print(nomeNodo);

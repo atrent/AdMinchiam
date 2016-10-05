@@ -109,9 +109,9 @@ char modalita=EFFICIENTATORE;
 #define BUTTON 0
 
 ///////////////////////////////////////////////////
-#include <SoftwareSerial.h>
-#define LCD 14
-SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
+//#include <SoftwareSerial.h>
+//#define LCD 14
+//SoftwareSerial SwSerial(BUTTON, LCD, false, 128);
 
 
 
@@ -291,8 +291,10 @@ void setup() {
     Serial.begin(115200);
     Serial.println("Booting...");
 
+	/*
     SwSerial.begin(9600);
     SwSerial.println("booting...");
+    */
 
     if(DEBUG)
         util_printStatus();
