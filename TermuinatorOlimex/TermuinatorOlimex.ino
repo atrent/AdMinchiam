@@ -154,7 +154,11 @@ void loop() {
     // test fs
     //Serial.println(spiffs_getValue("/ssid"));
 
-    util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
+
+	if(acceso)
+		util_blinkLed(LEDPIN,10); // se ventola ON
+	else
+		util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
 
     if(digitalRead(BUTTON)==LOW) { // tasto -> config
         configFromSerialToSpiffs();
