@@ -27,3 +27,7 @@ STANDBY fritzing (trovare parts library)
 DONE spiffs plugin (url nel codice)
 
 documentazione di cosa installare
+
+config via rete (anche in chiaro)
+
+taratura temperatura DHT

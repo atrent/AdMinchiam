@@ -1,0 +1,23 @@
++ presenze
++ script presenze, ,yaml script
++ acquisto 4 motori
++ diario
++ lxc openwrt (provare qualche creazione)
+* repo gitolite su kimsufi (manca hooks, non si puo' mescolare 2 e 3)
++ pivot darkstar
+- config via rete termuinator
+
+- monkeysphere.info
+
+
+[remote "trinity"]
+	url = gitolite3@ns329370.ip-37-187-116.eu:brt-mediapivot
+	fetch = +refs/heads/*:refs/remotes/trinity/*
+	annex-uuid = 6cd8bac5-9aba-4ca1-9329-a6d6d7679506
+
+http://superuser.com/questions/929566/sha256-ssh-fingerprint-given-by-the-client-but-only-md5-fingerprint-known-for-se
+
+
+
+
+jq '.soci[] | select( .socio.hosts[]?.host.mac == "a4:5e:60:c4:df:db" ) | .socio.nome + " " + .socio.cog'
