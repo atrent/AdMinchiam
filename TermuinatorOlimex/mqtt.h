@@ -1,7 +1,9 @@
 // MQTT lib: https://github.com/adafruit/Adafruit_MQTT_Library
 // circa DONE: compatibilita' MQTT
+
 // TODO: mqtt topic patterns
 
+//TODO auth MQTT con username e password 
 
 //////////////////////////////////////////////////
 //const char* mqtt_server = "broker.mqtt-dashboard.com";
@@ -42,7 +44,7 @@ void mqtt_reconnect() {
             // Once connected, publish an announcement...
             mqtt_client.publish(nomeNodo.c_str(), "first msg.");
             // ... and resubscribe
-            //mqtt_client.subscribe("termuinator2");
+            mqtt_client.subscribe("TermuinatorConfig/#");
         } else {
             Serial.print("failed, rc=");
             Serial.print(mqtt_client.state());

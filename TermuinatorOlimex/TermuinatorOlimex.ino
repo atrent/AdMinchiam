@@ -30,10 +30,11 @@
 
 
 // versione "termostato":
-// TODO: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
+// DONE: modo di funzionamento estate/inverno (per usarlo anche come termostato tradizionale, e.g. Venezia
 // TODO: PIR sensor (presenza ospiti, decisione attivazione termostato)
 // TODO: LCD (bootstrapped), trovare elenco caratteri speciali (commands)
-// TODO: bottone selezione temperatura (su,giu)
+// TODO: bottone selezione temperatura (su,giu) OPPURE...
+// TODO: (in alternativa) tastierino led+bottoni
 
 // TODO: convertire tutte le stringhe chiamando macro F()
 
@@ -140,30 +141,31 @@ int wifiAndMqttOn();
 
 //////////////////////////////////////////
 void loop() {
-    /*
-        SwSerial.print("loop...");
-        delay(100);
-    */
-
+	// se non wifi entra in attiva wifi+mqtt
     if (WiFi.status() != WL_CONNECTED) wifiAndMqttOn();
 
-    char str_temp[6];
-    char str_hic[6];
-    char str_humidity[6];
-
-    // test fs
-    //Serial.println(spiffs_getValue("/ssid"));
-
-
+	/////////////////////////////////////
+	// heartbeat
 	if(acceso)
 		util_blinkLed(LEDPIN,10); // se ventola ON
 	else
 		util_blinkLed(LEDPIN); // tanto per dire "sono sveglio"
+	/////////////////////////////////////
 
+	// se richiesto (pulsante premuto) entra in config via seriale
     if(digitalRead(BUTTON)==LOW) { // tasto -> config
         configFromSerialToSpiffs();
     }
 
+	// TODO (low pri) config via http parse string
+	// se richiesto (client available su socket) entra in config (parse string http)
+	/*
+    if(server.available()) {
+        ...;
+    }
+    */
+
+	/////////////////////////////////////
     // Reading temperature or humidity takes about 250 milliseconds!
     // Sensor readings may also be up to 2 seconds 'old' (its a very slow sensor)
     humidity = dht.readHumidity();
@@ -195,30 +197,19 @@ void loop() {
         if(temperature <= tempSoglia) util_switch(ON);
         if(temperature >= (tempSoglia+finestraIsteresi)) util_switch(OFF);
     }
-
-    /*
-      mySerial.print("ls");
-      mySerial.write(13);
-      output();
-    */
-
-    //mySerial.print("read TERMU.INI");
-    //mySerial.write(13);
+	/////////////////////////////////////
 
 
-    //Serial.println(".pre-ls.");
-    //Serial.print(mySerial.read());
-
-
-
+    ///////////////////////////////////////
+    // Signalling MQTT
+	// TODO scorporare in una funzione?
+    char str_temp[6];
+    char str_hic[6];
+    char str_humidity[6];
     if (WiFi.status() == WL_CONNECTED) {
-
-        ///////////////////////////////////////
-        // MQTT
         if (!mqtt_client.connected()) {
             mqtt_reconnect();
         }
-
 
         if (mqtt_client.connected()) {
             mqtt_client.loop();
@@ -242,23 +233,53 @@ void loop() {
         }
     }
 
+	// TODO eliminare delay e passare davvero a TaskScheduler
     delay(DELAY_LOOP);
 }
 
 
+// test only
+/*
+void printMQTTmsg(char* topic, byte* payload, unsigned int length) {
+  Serial.println();
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+*/
+
+// parsa una stringa nella forma "E/T", "XX" temp, "XX" isteresi
+void parseMQTTconfig(char* topic, byte* payload, unsigned int length) {
+  Serial.println();
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i = 0; i < length; i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+
+  //TODO !!!parsing!!!
+  // switch su TermuinatorConfig/id/<isteresi|modalita|soglia>
+  // il payload e' gia' il valore da (validare e) convertire
+  
+}
+
+
+// TODO scorporare mqtt da wifi
 int wifiAndMqttOn() {
     Serial.println("entro in net services");
     if(wifi.startsWith("y")) {
-
         // wifi (dip. da parametri)
         if(wifi_setup()) {
-
-
             // DONE: deve funzionare anche senza broker, quindi check se bloccante!!! fatto, nel senso che abbiamo messo la reconnect monotentativo
             // mqtt (dip. da parametri)
             mqtt_client.setServer(mqtt_server.c_str(), 1883); //TODO: porta come config in file
-            //mqtt_client.setCallback(mqtt_callback);  // solo se si vuole anche ascoltare msg
-
+            mqtt_client.setCallback(parseMQTTconfig);
             Serial.println("mqtt set");
             return 0;
         }
@@ -272,9 +293,7 @@ int wifiAndMqttOn() {
     }
 }
 
-
 void configFromSerialToSpiffs() {
-	
     util_emptySerial();
 
     wifi=util_input("wifi enable: ",wifi);
