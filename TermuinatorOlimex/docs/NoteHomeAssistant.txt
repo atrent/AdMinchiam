@@ -1,0 +1,24 @@
+# Installazione home-assistant (TBD)
+
+
+# Per fa vedere un device MQTT
+
+edit .homassistant/configuration.yaml
+
+aggiungere sezione mqtt (con broker etc)
+
+nei sensori aggiungere la definizione per ogni sensore:
+ - platform: mqtt
+   name: "Termuinator (temp)"   (*)
+   state_topic: "topic id del sensore (nel nostro caso Termuinator18...)"
+   unit_of_measurement: '°C'
+   value_template: '{{ value_json.t }}'  [pattern del payload]
+
+
+Volendo si possono raggruppare editando il file groups.yaml, es.
+
+	studio:
+		name: Studio
+		entities:
+			- sensor.termuinator_hum   [questo nome viene generato da (*)]
+		    - sensor.termuinator_t

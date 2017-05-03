@@ -54,6 +54,8 @@
 //Termuinator18fe34a206e
 // mosquitto_sub -v -h broker.mqtt-dashboard.com -t Termuinator18fe34a206e
 // mosquitto_sub -v -h test.mosquitto.org -t Termuinator18fe34a206e
+// mosquitto_sub -v -h atrent.it -t Termuinator18fe34a206e
+// 									Termuinator18fe34f5ddb
 
 // TODO: separare hw layer (in caso si usi altro da ESP8266)
 
