@@ -58,7 +58,10 @@ void util_printStatus() {
 
     //SwSerial.println(nomeNodo);
 
-    Serial.print(F("NODE: "));
+    Serial.print(F("VER: "));
+    Serial.print(VER);
+
+    Serial.print(F(", node: "));
     Serial.print(nomeNodo);
 
     Serial.print(F(", wifi enabled: "));

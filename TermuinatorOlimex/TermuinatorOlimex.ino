@@ -70,6 +70,7 @@
 // [NO] PIR: https://www.sparkfun.com/products/13285
 // DHT11 (pero' versione montata con resistenze) https://learn.adafruit.com/dht (3 to 5v)
 
+#define VER	0.099
 
 
 byte mac[6];  // TODO: verificare dove lo usiamo
