@@ -1,0 +1,37 @@
+# Groups
+#
+  studio:
+    name: Studio
+    entities:
+      - sensor.studio_termuinator_hum
+      - sensor.studio_termuinator_temp
+  livingroom:
+    name: Living room
+    entities:
+      - sensor.living_termuinator_hum
+      - sensor.living_termuinator_temp
+  speedtest:
+    name: Neubot speedtest
+    entities:
+      - sensor.neubot_download
+      - sensor.neubot_upload
+
+# Tabs
+#
+  default_view:
+    view: yes
+    icon: mdi:home
+    entities:
+      - group.studio
+      - group.livingroom
+  sorveglianza:
+    view: yes
+    entities:
+      - camera.cucina
+  system:
+    name: Infrastructure information
+    icon: mdi:account-multiple
+    view: yes
+    entities:
+      - group.speedtest
+
