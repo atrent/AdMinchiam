@@ -1,10 +1,6 @@
 *.class
 *.orig
-wifi-*.h
+**/wifi*.h
 saved.status
 TermuinatorOlimex/data/ssid
 TermuinatorOlimex/data/password
-TermuinatorOlimex/data/broker
-TermuinatorOlimex/data/isteresi
-TermuinatorOlimex/data/soglia
-TermuinatorOlimex/data/wifi
