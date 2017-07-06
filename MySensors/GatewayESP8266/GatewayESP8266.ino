@@ -70,7 +70,7 @@
 #define MY_DEBUG
 
 // Use a bit lower baudrate for serial prints on ESP8266 than default in MyConfig.h
-#define MY_BAUD_RATE 115200
+#define MY_BAUD_RATE 9600
 
 // Enables and select radio type (if attached)
 //#define MY_RADIO_NRF24
@@ -1030,7 +1030,7 @@ void temp()
 void hum()
 {
 
-    Serial.print("Humitidty is: " );
+    Serial.print("Humidity is: " );
     Serial.println(randNumber);
 
     send(msg_S_HUM.set((int)randNumber));
