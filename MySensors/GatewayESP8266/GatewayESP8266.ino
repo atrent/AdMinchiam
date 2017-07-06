@@ -80,6 +80,8 @@
 
 #define MY_GATEWAY_ESP8266
 
+// attenzione che il file sottostante NON è in git!
+// il .h definisce le costanti MY_ESP8266_SSID e MY_ESP8266_PASSWORD come stringhe
 #include "../wifiauth.h"
 
 // Enable UDP communication
