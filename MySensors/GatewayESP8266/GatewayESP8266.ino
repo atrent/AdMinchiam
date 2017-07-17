@@ -110,6 +110,7 @@
 // See guide for details on sensor wiring and usage:
 //   https://learn.adafruit.com/dht/overview
 DHT_Unified dht(DHTPIN, DHTTYPE);
+sensor_t sensor;
 
 
 // Enable MY_IP_ADDRESS here if you want a static ip address (no DHCP)
@@ -178,43 +179,55 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 // will make the sketch too large for a pro mini's memory so it's probably best to try
 // one at a time.
 
-#define ID_S_ARMED             0  // dummy to control armed stated for several sensors
-#define ID_S_DOOR              1
-//#define ID_S_MOTION            2
-#define ID_S_SMOKE             3
-//#define ID_S_LIGHT             4
-#define ID_S_DIMMER            5
-//#define ID_S_COVER             6
-#define ID_S_TEMP              7
-#define ID_S_HUM               8
-//#define ID_S_BARO              9
-//#define ID_S_WIND              10
-#define ID_S_RAIN              11
-//#define ID_S_UV                12
-//#define ID_S_WEIGHT            13
-//#define ID_S_POWER             14
-//#define ID_S_HEATER            15
-//#define ID_S_DISTANCE          16
-#define ID_S_LIGHT_LEVEL       17
-//#define ID_S_LOCK              18
-//#define ID_S_IR                19
-//#define ID_S_WATER             20
-//#define ID_S_AIR_QUALITY       21
-//#define ID_S_DUST              22
-//#define ID_S_SCENE_CONTROLLER  23
+//#define ID_S_ARMED             0  // dummy to control armed stated for several sensors
+#define ID_S_DOOR              0
+#define ID_S_MOTION            1 //*
+#define ID_S_SMOKE             2
+////#define ID_S_LIGHT             3  //binary
+#define ID_S_DIMMER            4
+//#define ID_S_COVER             5
+#define ID_S_TEMP              6
+#define ID_S_HUM               7
+#define ID_S_BARO              8 //*
+#define ID_S_WIND              9 //*
+#define ID_S_RAIN              10
+#define ID_S_UV                11 //*
+#define ID_S_WEIGHT            12 //*
+#define ID_S_POWER             13 //*
+#define ID_S_HEATER            14 //*
+#define ID_S_DISTANCE          15 //*
+#define ID_S_LIGHT_LEVEL       16
+
+//#define ID_S_LOCK              17  // arduino node
+//#define ID_S_IR                19  // arduino repeater node
+
+//#define ID_S_LOCK              19
+//#define ID_S_IR                20
+//#define ID_S_WATER             21
+#define ID_S_AIR_QUALITY       22 //*
+
+//#define ID_S_CUSTOM                23
+
+#define ID_S_DUST              24 //*
+#define ID_S_SCENE_CONTROLLER  25
 //// Lib 1.5 sensors
-//#define ID_S_RGB_LIGHT         24
-//#define ID_S_RGBW_LIGHT        25
-//#define ID_S_COLOR_SENSOR      26
-//#define ID_S_HVAC              27
-//#define ID_S_MULTIMETER        28
-//#define ID_S_SPRINKLER         29
-//#define ID_S_WATER_LEAK        30
-//#define ID_S_SOUND             31
-//#define ID_S_VIBRATION         32
-//#define ID_S_MOISTURE          33
+#define ID_S_RGB_LIGHT         26 //*
+#define ID_S_RGBW_LIGHT        27 //*
+#define ID_S_COLOR_SENSOR      28 //*
+#define ID_S_HVAC              29 //*
+#define ID_S_MULTIMETER        30 //*
+#define ID_S_SPRINKLER         31 //*
+#define ID_S_WATER_LEAK        32 //*
+#define ID_S_SOUND             33 //*
+#define ID_S_VIBRATION         34 //*
+#define ID_S_MOISTURE          35 //*
 //
-//#define ID_S_CUSTOM            99
+//#define ID_S_INFO          36
+#define ID_S_GAS          37 //*
+#define ID_S_GPS          38 //*
+//#define ID_S_WATER_QUALITY          39
+
+////#define ID_S_CUSTOM            99
 
 
 
@@ -982,8 +995,8 @@ void temp()
 {
     //int t=map(randNumber,1,100,0,45);
 
-    sensor_t sensor;
     dht.temperature().getSensor(&sensor);
+    /*
     Serial.println("------------------------------------");
     Serial.println("Temperature");
     Serial.print  ("Sensor:       ");
@@ -1001,6 +1014,7 @@ void temp()
     Serial.print  ("Resolution:   ");
     Serial.print(sensor.resolution);
     Serial.println(" *C");
+    */
 
     sensors_event_t event;
     dht.temperature().getEvent(&event);
@@ -1012,7 +1026,7 @@ void temp()
         Serial.print(event.temperature);
         Serial.println(" *C");
         send(msg_S_TEMP.set((int)(event.temperature)));
-        Serial.println("------------------------------------");
+        //Serial.println("------------------------------------");
     }
 
 
@@ -1022,11 +1036,20 @@ void temp()
 #ifdef ID_S_HUM
 void hum()
 {
+    dht.humidity().getSensor(&sensor);
 
-    Serial.print("Humidity is: " );
-    Serial.println(randNumber);
-
-    send(msg_S_HUM.set((int)randNumber));
+    sensors_event_t event;
+    dht.humidity().getEvent(&event);
+    if (isnan(event.relative_humidity)) {
+        Serial.println("Error reading humidity!");
+    }
+    else {
+        Serial.print("Hum: ");
+        Serial.print(event.relative_humidity);
+        Serial.println(" %");
+		send(msg_S_HUM.set((int)event.relative_humidity));
+        //Serial.println("------------------------------------");
+    }
 
 }
 #endif
@@ -1036,7 +1059,7 @@ void baro()
 {
 
     const char *weather[] = {"stable","sunny","cloudy","unstable","thunderstorm","unknown"};
-    long pressure = map(randNumber,1,100,870,1086);// hPa?
+    int pressure = map(randNumber,1,100,870,1086);// hPa?
     int forecast = map(randNumber,1,100,0,5);
 
     Serial.print("Atmosferic Pressure is: " );
@@ -1056,15 +1079,15 @@ void wind()
 
     Serial.print("Wind Speed is: " );
     Serial.println(randNumber);
-    send(msg_S_WIND_S.set(randNumber));
+    send(msg_S_WIND_S.set((int)randNumber));
 
     Serial.print("Wind Gust is: " );
     Serial.println(randNumber+10);
-    send(msg_S_WIND_G.set(randNumber+10));
+    send(msg_S_WIND_G.set((int)(randNumber+10)));
 
     Serial.print("Wind Direction is: " );
     Serial.println(map(randNumber,1,100,0,360));
-    send(msg_S_WIND_D.set(map(randNumber,1,100,0,360)));
+    send(msg_S_WIND_D.set((int)map(randNumber,1,100,0,360)));
 
 }
 #endif
@@ -1091,9 +1114,9 @@ void uv()
 {
 
     Serial.print("Ultra Violet level is: " );
-    Serial.println(map(randNumber,1,100,0,15));
+    Serial.println((int)map(randNumber,1,100,0,15));
 
-    send(msg_S_UV.set(map(randNumber,1,100,0,15)));
+    send(msg_S_UV.set((int)map(randNumber,1,100,0,15)));
 
 }
 #endif
@@ -1101,11 +1124,11 @@ void uv()
 #ifdef ID_S_WEIGHT
 void weight()
 {
-
+	int v=map(randNumber,1,100,0,150);
     Serial.print("Weight is: " );
-    Serial.println(map(randNumber,1,100,0,150));
+    Serial.println(v);
 
-    send(msg_S_WEIGHT.set(map(randNumber,1,100,0,150)));
+    send(msg_S_WEIGHT.set(v));
 
 }
 #endif
@@ -1116,11 +1139,11 @@ void power()
 
     Serial.print("Watt is: " );
     Serial.println(map(randNumber,1,100,0,150));
-    send(msg_S_POWER_W.set(map(randNumber,1,100,0,150)));
+    send(msg_S_POWER_W.set((int)map(randNumber,1,100,0,150)));
 
     Serial.print("KWH is: " );
     Serial.println(map(randNumber,1,100,0,150));
-    send(msg_S_POWER_K.set(map(randNumber,1,100,0,150)));
+    send(msg_S_POWER_K.set((int)map(randNumber,1,100,0,150)));
 
 }
 #endif
@@ -1158,7 +1181,7 @@ void distance()
     Serial.print("Distance is: " );
     Serial.println(map(randNumber,1,100,0,150));
 
-    send(msg_S_DISTANCE.set(map(randNumber,1,100,0,150)));
+    send(msg_S_DISTANCE.set((int)map(randNumber,1,100,0,150)));
 
 }
 #endif
@@ -1224,7 +1247,7 @@ void air()
     Serial.print("Air Quality is: " );
     Serial.println(randNumber);
 
-    send(msg_S_AIR_QUALITY.set(randNumber));
+    send(msg_S_AIR_QUALITY.set((int)randNumber));
 
 }
 #endif
@@ -1236,7 +1259,7 @@ void dust()
     Serial.print("Dust level is: " );
     Serial.println(randNumber);
 
-    send(msg_S_DUST.set(randNumber));
+    send(msg_S_DUST.set((int)randNumber));
 
 }
 #endif
@@ -1283,7 +1306,7 @@ void rgbwLight()
 
     Serial.print("RGBW Light Watt is: " );
     Serial.println(map(randNumber,1,100,0,150));
-    send(msg_S_RGBW_LIGHT_V_WATT.set(map(randNumber,1,100,0,150)));
+    send(msg_S_RGBW_LIGHT_V_WATT.set((int)map(randNumber,1,100,0,150)));
 
 }
 #endif
