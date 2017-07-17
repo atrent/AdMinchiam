@@ -1,6 +1,6 @@
 homeassistant:
   # Name of the location where Home Assistant is running
-  name: Home sweet home
+  name: Biscuolo's Home 
   # Location required to calculate the time the sun rises and sets
   latitude: 45.4643
   longitude: 9.1895
@@ -11,8 +11,11 @@ homeassistant:
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: Europe/Rome
 
+  customize: !include customization.yaml
+
+
 # Show links to resources in log and frontend
-introduction:
+# introduction:
 
 # Enables the frontend
 frontend:
@@ -38,7 +41,7 @@ updater:
 discovery:
 
 # Allows you to issue voice commands from the frontend in enabled browsers
-conversation:
+# conversation:
 
 # Enables support for tracking state changes over time.
 history:
@@ -51,105 +54,105 @@ sun:
 
 sensor:
 # Weather Prediction
-  - platform: yr
+#  - platform: yr
 # system monitor
-  - platform: systemmonitor
-    resources:
-    - type: disk_use_percent
-      arg: /
-    - type: memory_free
-    - type: processor_use
-    - type: network_in
-      arg: eth0
-    - type: network_out
-      arg: eth0
-    - type: last_boot
+#  - platform: systemmonitor
+#    resources:
+#    - type: disk_use_percent
+#      arg: /
+#    - type: memory_free
+#    - type: processor_use
+#    - type: network_in
+#      arg: eth0
+#    - type: network_out
+#      arg: eth0
+#    - type: since_last_boot
 # Termuinators via MQTT
-  - platform: mqtt
-    name: "Studio Termuinator (temp)"
-    state_topic: "Termuinator/Termuinator18fe34f5ddb"
-    unit_of_measurement: '°C'
-    value_template: '{{ value_json.t }}'
-  - platform: mqtt
-    name: "Studio Termuinator (hum)"
-    state_topic: "Termuinator/Termuinator18fe34f5ddb"
-    unit_of_measurement: '%'
-    value_template: '{{ value_json.hum }}'
-  - platform: mqtt
-    name: "Living Termuinator (temp)"
-    state_topic: "Termuinator/Termuinator18fe34f5dcc3"
-    unit_of_measurement: '°C'
-    value_template: '{{ value_json.t }}'
-  - platform: mqtt
-    name: "Living Termuinator (hum)"
-    state_topic: "Termuinator/Termuinator18fe34f5dcc3"
-    unit_of_measurement: '%'
-    value_template: '{{ value_json.hum }}'
-# LoRa gateway@atrent via MQTT
-# OTTIMO esempio di parsing payload CSV
-  - platform: mqtt
-    name: "LoRa gw (Box temp)"
-    state_topic: "ttn-atrent/boxTempHumid"
-    unit_of_measurement: "°C"
-    value_template: "{{ value.split(',')[1]}}"
-  - platform: mqtt
-    name: "LoRa gw (Box hum)"
-    state_topic: "ttn-atrent/boxTempHumid"
-    unit_of_measurement: "%"
-    value_template: "{{ value.split(',')[2]}}"
-  - platform: mqtt
-    name: "LoRa gw (CPU temp)"
-    state_topic: "ttn-atrent/cpuTemp"
-    unit_of_measurement: "°C"
-    value_template: "{{ value.split(',')[1]}}"
-  - platform: mqtt
-    name: "LoRa gw (CPU load)"
-    state_topic: "ttn-atrent/cpuLoad"
-    value_template: "{{ value.split(' ')[1]}}"
-  - platform: mqtt
-    name: "LoRa gw (mem)"
-    state_topic: "ttn-atrent/memory"
-    unit_of_measurement: "bytes"
-    value_template: "{{ value.split(',')[2]}}"
-  - platform: mqtt
-    name: "LoRa gw (disk free)"
-    state_topic: "ttn-atrent/disk"
-    unit_of_measurement: "%"
-    value_template: "{{ value.split(',')[4].split('%')[0]}}"
-
- 
+#  - platform: mqtt
+#    name: "Studio Termuinator (temp)"
+#    state_topic: "Termuinator/Termuinator18fe34f5ddb"
+#    unit_of_measurement: '°C'
+#    value_template: '{{ value_json.t }}'
+#  - platform: mqtt
+#    name: "Studio Termuinator (hum)"
+#    state_topic: "Termuinator/Termuinator18fe34f5ddb"
+#    unit_of_measurement: '%'
+#    value_template: '{{ value_json.hum }}'
+#  - platform: mqtt
+#    name: "Living Termuinator (temp)"
+#    state_topic: "Termuinator/Termuinator18fe34f5dcc3"
+#    unit_of_measurement: '°C'
+#    value_template: '{{ value_json.t }}'
+#  - platform: mqtt
+#    name: "Living Termuinator (hum)"
+#    state_topic: "Termuinator/Termuinator18fe34f5dcc3"
+#    unit_of_measurement: '%'
+#    value_template: '{{ value_json.hum }}'
+## LoRa gateway@atrent via MQTT
+## OTTIMO esempio di parsing payload CSV
+#  - platform: mqtt
+#    name: loraboxtemp
+#    state_topic: "ttn-atrent/boxTempHumid"
+#    unit_of_measurement: "°C"
+#    value_template: "{{ value.split(',')[1]}}"
+#  - platform: mqtt
+#    name: "LoRa gw (Box hum)"
+#    state_topic: "ttn-atrent/boxTempHumid"
+#    unit_of_measurement: "%"
+#    value_template: "{{ value.split(',')[2]}}"
+#  - platform: mqtt
+#    name: "LoRa gw (CPU temp)"
+#    state_topic: "ttn-atrent/cpuTemp"
+#    unit_of_measurement: "°C"
+#    value_template: "{{ value.split(',')[1]}}"
+#  - platform: mqtt
+#    name: "LoRa gw (CPU load)"
+#    state_topic: "ttn-atrent/cpuLoad"
+#    value_template: "{{ value.split(' ')[1]}}"
+#  - platform: mqtt
+#    name: "LoRa gw (mem)"
+#    state_topic: "ttn-atrent/memory"
+#    unit_of_measurement: "bytes"
+#    value_template: "{{ value.split(',')[2]}}"
+#  - platform: mqtt
+#    name: "LoRa gw (disk free)"
+#    state_topic: "ttn-atrent/disk"
+#    unit_of_measurement: "%"
+#    value_template: "{{ value.split(',')[4].split('%')[0]}}"
 
 # RESTful sensors
-  - platform: rest
-    name: "Neubot download"
-    resource: http://zen2:9775/api/state
-    method: POST
-    value_template: '{{ value_json.events.test_download }}'
-  - platform: rest
-    name: "Neubot upload"
-    resource: http://zen2:9775/api/state
-    method: POST
-    value_template: '{{ value_json.events.test_upload }}'
+#  - platform: rest
+#    name: "Neubot download"
+#    resource: http://zen2:9775/api/state
+#    method: POST
+#    value_template: '{{ value_json.events.test_download }}'
+#  - platform: rest
+#    name: "Neubot upload"
+#    resource: http://zen2:9775/api/state
+#    method: POST
+#    value_template: '{{ value_json.events.test_upload }}'
 
-camera:
+#camera:
 # Foscam cameras
-  - platform: generic
-    name: cucina
-    still_image_url: http://zen2:9776/snapshot.cgi?user=viewer42&pwd=viewer42
-    # la forcamn di Atrent non funziona con questo tipo di platform, proviamo generic
-    # platform: foscam
-    #ip: zen2
-    #port: 9776
-    #username: viewer42
-    #password: viewer42
+#  - platform: generic
+#    name: cucina
+#    still_image_url: http://zen2:9776/snapshot.cgi?user=viewer42&pwd=viewer42
+#    # la forcamn di Atrent non funziona con questo tipo di platform, proviamo generic
+#    # platform: foscam
+#    #ip: zen2
+#    #port: 9776
+#    #username: viewer42
+#    #password: viewer42
 
 # MySensors gateway test
 # Example configuration.yaml entry
 mysensors:
   gateways:
-    - device: '10.38.2.125'
+    - device: 'sensor-gateway'
       persistence_file: '/home/homeassistant/.homeassistant/testmysensors.json'
       tcp_port: 5003
+# in mysensors sensors names are componed by <SKETCH_NAME>_<MY_NODE_ID>_<SENSOR_ID>; e.g. sensor.brt_0_7
+# SKETCH_NAME, MY_NODE_ID and ID_[S|?]_<label> (as SENSOR_ID)
 # optimistic: false
   persistence: false
   version: 2
