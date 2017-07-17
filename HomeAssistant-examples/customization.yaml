@@ -1,0 +1,7 @@
+    # lorawan sensors di atrent
+    sensor.loraboxtemp:
+       friendly_name: "LoRa gw (Box temp)"
+    # BRT mysensors
+    sensor.brt_0_6:
+       friendly_name: "Studio Temp"
+    

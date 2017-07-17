@@ -1,5 +1,10 @@
 # Groups
 #
+  macchine:
+    name: Systems in our network
+    entities:
+      - sensor.cpu_use
+      - sensor.since_last_boot
   studio:
     name: Studio
     entities:
@@ -10,11 +15,17 @@
     entities:
       - sensor.living_termuinator_hum
       - sensor.living_termuinator_temp
-  speedtest:
-    name: Neubot speedtest
+  loratrent:
+    name: LoraWAN atrent
     entities:
-      - sensor.neubot_download
-      - sensor.neubot_upload
+#      - sensor.lora_gw_box_temp
+      - sensor.loraboxtemp
+      - sensor.lora_gw_box_hum
+#  speedtest:
+#    name: Neubot speedtest
+#    entities:
+#      - sensor.neubot_download
+#      - sensor.neubot_upload
 
 # Tabs
 #
@@ -24,14 +35,20 @@
     entities:
       - group.studio
       - group.livingroom
-  sorveglianza:
+      - sensor.brt_0_7
+  atrent:
     view: yes
+    icon: mdi:home
     entities:
-      - camera.cucina
+      - group.loratrent
+#  sorveglianza:
+#    view: yes
+#    entities:
+#      - camera.cucina
   system:
     name: Infrastructure information
     icon: mdi:account-multiple
     view: yes
     entities:
-      - group.speedtest
+      - group.macchine
 
