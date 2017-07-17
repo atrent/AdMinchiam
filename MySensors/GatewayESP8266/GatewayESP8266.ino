@@ -70,15 +70,14 @@
 #define MY_DEBUG
 
 // Use a bit lower baudrate for serial prints on ESP8266 than default in MyConfig.h
-#define MY_BAUD_RATE 9600
+#define MY_BAUD_RATE 115200
 
 // Enables and select radio type (if attached)
 //#define MY_RADIO_NRF24
 //#define MY_RADIO_RFM69
 
-#define MY_NODE_ID 254
-
-#define MY_GATEWAY_ESP8266
+#define MY_NODE_ID 41  // non ha senso se definito GW qui sotto?
+#define MY_GATEWAY_ESP8266  // automaticamente ID=0
 
 // attenzione che il file sottostante NON è in git!
 // il .h definisce le costanti MY_ESP8266_SSID e MY_ESP8266_PASSWORD come stringhe
@@ -95,33 +94,30 @@
 #define LONG_WAIT 500
 #define SHORT_WAIT 50
 
-#define SKETCH_NAME "Sensori mastruzzo... "
+#define SKETCH_NAME "BRT"
 #define SKETCH_VERSION "v0.6"
 
 
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
-#define DHTPIN            D4         // Pin which is connected to the DHT sensor.
+#define DHTPIN            2         // Pin which is connected to the DHT sensor.
 
 // Uncomment the type of sensor in use:
 #define DHTTYPE           DHT11     // DHT 11
 //#define DHTTYPE           DHT22     // DHT 22 (AM2302)
 //#define DHTTYPE           DHT21     // DHT 21 (AM2301)
-
 // See guide for details on sensor wiring and usage:
 //   https://learn.adafruit.com/dht/overview
-
 DHT_Unified dht(DHTPIN, DHTTYPE);
-
 
 
 // Enable MY_IP_ADDRESS here if you want a static ip address (no DHCP)
 //#define MY_IP_ADDRESS 192,168,178,87
 
 // If using static ip you need to define Gateway and Subnet address as well
-#define MY_IP_GATEWAY_ADDRESS 192,168,178,1
-#define MY_IP_SUBNET_ADDRESS 255,255,255,0
+//#define MY_IP_GATEWAY_ADDRESS 192,168,178,1
+//#define MY_IP_SUBNET_ADDRESS 255,255,255,0
 
 // The port to keep open on node server mode
 #define MY_PORT 5003
@@ -161,12 +157,7 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 
 #include <MySensors.h>
 
-
-
-
-
-
-
+// QUESTO ESEMPIO è mescolato con MockMySensors (nel repo MySensors, git@github.com:mysensors/MySensors.git)
 
 // Define Sensors ids
 /*      S_DOOR, S_MOTION, S_SMOKE, S_LIGHT, S_DIMMER, S_COVER, S_TEMP, S_HUM, S_BARO, S_WIND,
@@ -177,6 +168,8 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 
 
 
+#define ID_S_ARDUINO_NODE     42
+#define ID_S_ARDUINO_REPEATER_NODE   43
 ////#define ID_S_ARDUINO_NODE            //auto defined in initialization
 ////#define ID_S_ARDUINO_REPEATER_NODE   //auto defined in initialization
 
@@ -185,7 +178,7 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 // will make the sketch too large for a pro mini's memory so it's probably best to try
 // one at a time.
 
-#define ID_S_ARMED             0  // dummy to controll armed stated for several sensors
+#define ID_S_ARMED             0  // dummy to control armed stated for several sensors
 #define ID_S_DOOR              1
 //#define ID_S_MOTION            2
 #define ID_S_SMOKE             3
@@ -546,7 +539,7 @@ void presentation()
 
 #ifdef ID_S_TEMP
     Serial.println("  S_TEMP");
-    present(ID_S_TEMP,S_TEMP,"House Temperarue");
+    present(ID_S_TEMP,S_TEMP,"House Temperature");
     wait(SHORT_WAIT);
 #endif
 
@@ -1018,7 +1011,7 @@ void temp()
         Serial.print("Temperature: ");
         Serial.print(event.temperature);
         Serial.println(" *C");
-        send(msg_S_TEMP.set((int)(event.temperature*10)));
+        send(msg_S_TEMP.set((int)(event.temperature)));
         Serial.println("------------------------------------");
     }
 
