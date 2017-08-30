@@ -73,7 +73,7 @@
 #define MY_BAUD_RATE 115200
 
 // Enables and select radio type (if attached)
-//#define MY_RADIO_NRF24
+#define MY_RADIO_NRF24
 //#define MY_RADIO_RFM69
 
 #define MY_NODE_ID 41  // non ha senso se definito GW qui sotto?
