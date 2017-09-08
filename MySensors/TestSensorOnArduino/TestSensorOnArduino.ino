@@ -27,7 +27,7 @@
  */
 
 // Enable debug prints to serial monitor
-#define MY_DEBUG
+//#define MY_DEBUG
 //#define MY_DEBUG_VERBOSE_RF24
 
 // Enable and select radio type attached
@@ -37,11 +37,12 @@
 //#define MY_NODE_ID 41  // non ha senso se definito GW qui sotto?
 
 #include <MySensors.h>
+#include <ESP8266WiFi.h> //needed to switch off (or on) WiFi on ESP8266
 
 #define CHILD_ID_LIGHT 0
 #define LIGHT_SENSOR_ANALOG_PIN 0
 
-unsigned long SLEEP_TIME = 3000; // Sleep time between reads (in milliseconds)
+unsigned long SLEEP_TIME = 10000; // Sleep time between reads (in milliseconds)
 
 MyMessage msg(CHILD_ID_LIGHT, V_LIGHT_LEVEL);
 //int lastLightLevel;
@@ -60,17 +61,26 @@ void presentation()
 void setup(){
 	Serial.println("begin setup");
 	Serial.begin(115200);
+
+    // Turning off ESP8266 WiFi chip
+    WiFi.disconnect();
+    WiFi.mode(WIFI_OFF);
+    WiFi.forceSleepBegin();
+    delay(1);
+
 	Serial.println("end setup");	
 }
-
-
 
 void loop()
 {
 	Serial.println("loop");
+    Serial.println(SLEEP_TIME);
 	int lightLevel=(int)random(0,100);
 	//int16_t lightLevel = (1023-analogRead(LIGHT_SENSOR_ANALOG_PIN))/10.23;
 	Serial.println(lightLevel);
 	send(msg.set(lightLevel));
-	sleep(SLEEP_TIME);
+	// the next sleep does not work on ESP8266: wiring needed?!?
+	// using delay for testng purposes
+	//sleep(SLEEP_TIME);
+    delay(SLEEP_TIME);
 }
