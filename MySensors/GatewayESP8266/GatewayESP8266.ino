@@ -481,6 +481,9 @@ MyMessage msg_S_CUSTOM_5(ID_S_CUSTOM,V_VAR5);
 
 void setup()
 {
+	
+	Serial.begin(115200);
+	
     // Random SEED
     randomSeed(analogRead(0));
 
