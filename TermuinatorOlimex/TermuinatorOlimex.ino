@@ -125,11 +125,13 @@ char modalita=EFFICIENTATORE;
 
 // TODO: ordinare le dichiarazioni variabili e gli include e i define, PULIZIA CODICE
 String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
+/* NON SERVE!
 #include "wifi.h"
 #include "mqtt.h"
 #include "spiffs.h"
 #include "utils.h"
 #include "dht.h"
+*/
 
 
 //////////////////////////////////////////
