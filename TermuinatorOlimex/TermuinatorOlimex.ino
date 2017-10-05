@@ -130,6 +130,7 @@ String mqtt_server = "SBAGLIATO"; // per vedere se lo tira su dal file
 #include "spiffs.h"
 #include "utils.h"
 #include "dht.h"
+#include "prova.h"
 
 
 //////////////////////////////////////////
@@ -365,4 +366,6 @@ void setup() {
     util_blinkLed(LEDPIN,10);
 
     Serial.println("Booted!");
+    Serial.println(PROVA);
+    cavolo();
 }
