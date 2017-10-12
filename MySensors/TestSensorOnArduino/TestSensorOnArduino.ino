@@ -27,7 +27,7 @@
  */
 
 // Enable debug prints to serial monitor
-//#define MY_DEBUG
+#define MY_DEBUG
 //#define MY_DEBUG_VERBOSE_RF24
 
 // Enable and select radio type attached
@@ -42,7 +42,8 @@
 #define CHILD_ID_LIGHT 0
 #define LIGHT_SENSOR_ANALOG_PIN 0
 
-unsigned long SLEEP_TIME = 60000; // Sleep time between reads (in milliseconds)
+//const unsigned int SLEEP_TIME PROGMEM = 60000; // Sleep time between reads (in milliseconds)
+const unsigned int SLEEP_TIME PROGMEM= 10000; // Sleep time between reads (in milliseconds)
 
 #define ID_S_TEMP              6
 
@@ -56,10 +57,12 @@ MyMessage msg_S_TEMP(ID_S_TEMP,V_TEMP);
 #include <DHT.h>
 #include <DHT_U.h>
 #define DHTPIN            4         // Pin which is connected to the DHT sensor.
+#define DHTPOWER            5         // Pin which is connected to the DHT sensor.
 #define DHTTYPE           DHT11     // DHT 11 
 // See guide for details on sensor wiring and usage:
 //   https://learn.adafruit.com/dht/overview
 DHT_Unified dht(DHTPIN, DHTTYPE);
+#define BOOTDHT 10000
 
 void presentation()
 {
@@ -71,13 +74,12 @@ void presentation()
     present(ID_S_TEMP, S_TEMP,"Temperature");
 }
 
-
 void setup() {
     Serial.println("begin setup");
     Serial.begin(115200);
 
-    pinMode(5,OUTPUT);
-    digitalWrite(5,HIGH);
+    pinMode(DHTPOWER,OUTPUT);
+    digitalWrite(DHTPOWER,HIGH);
 
     // Turning off ESP8266 WiFi chip
     /*
@@ -146,7 +148,7 @@ void loop()
     Serial.println(lightLevel);
     send(msg.set(lightLevel));
 
-// Get temperature event and print its value.
+	// Get temperature event and print its value.
     sensors_event_t event;
     dht.temperature().getEvent(&event);
     if (isnan(event.temperature)) {
@@ -159,14 +161,11 @@ void loop()
         send(msg_S_TEMP.set((int)event.temperature));
     }
 
-
-
-
     // the next sleep does not work on ESP8266: wiring needed?!?
     // using delay for testng purposes
-    digitalWrite(5,LOW);
+    digitalWrite(DHTPOWER,LOW);
     sleep(SLEEP_TIME);
     //delay(SLEEP_TIME);
-    digitalWrite(5,HIGH);
-
+    digitalWrite(DHTPOWER,HIGH);
+    delay(BOOTDHT);
 }
