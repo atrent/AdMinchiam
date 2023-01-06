@@ -1,0 +1,100 @@
+# per flashare alimentare tenendo premuto bottone, poi ricordarsi di ribootare
+
+# https://www.olimex.com/Products/IoT/ESP8266/ESP8266-EVB/open-source-hardware
+
+substitutions:
+  devicename: termuinator-at
+
+esphome:
+  name: ${devicename}
+  platform: esp8266
+  board: modwifi
+  #
+  #name_add_mac_suffix: True
+  project:
+    name: "atrent.termuinator"
+    version: "alpha"
+
+# Enable logging
+logger:
+  #level: INFO
+  level: DEBUG
+  #level: VERBOSE
+  #level: VERY_VERBOSE
+
+debug:
+#  update_interval: 30s
+
+web_server:
+
+<<: !include ./secrets.yaml
+
+mqtt:
+  broker: atrent.it
+  #broker: routercasa
+  discovery: False
+  topic_prefix: ${devicename}
+
+sensor:
+  # - platform: mqtt_subscribe
+  #   name: "Watt"
+  #   id: watt
+  #   topic: consumo
+  #   unit_of_measurement: W
+  # - platform: mqtt_subscribe
+  #   name: "Volt"
+  #   id: volt
+  #   topic: sonoff/sensor/hlw8012_voltage/state
+  #   unit_of_measurement: V
+  - platform: uptime
+    name: up_time
+  - platform: wifi_signal
+    name: "WiFi Signal Sensor"
+    update_interval: 5s
+  - platform: debug
+    free:
+      name: "Heap Free"
+    fragmentation:
+      name: "Heap Fragmentation"
+    block:
+      name: "Heap Max Block"
+    loop_time:
+      name: "Loop Time"
+  - platform: dht
+    pin: GPIO16
+    temperature:
+      name: "Living Room Temperature"
+    humidity:
+      name: "Living Room Humidity"
+    update_interval: 5s
+
+time:
+  - platform: sntp
+    id: sntp_time
+    #servers: routercasa.casapastru
+    timezone: Europe/Rome
+    on_time_sync:
+      then:
+        - logger.log: "*** sync sntp"
+    # on_time:
+    #   - seconds: '*'
+    #     then:
+    #       - logger.log: "seconds"
+    #       - lambda: |-
+    #           ESP_LOGD("time:","%d",id(sntp_time).now().second);
+    #           id(oled_display).strftime(0, 0, id(roboto), "%Y-%m-%d %H:%M", id(sntp_time).now());
+    #           id(oled_display).printf(10, 10, id(roboto), "ciao");
+    #           //id(oled_display).printf(0, 0, id(roboto), "%d:%d:%d", id(sntp_time).now().hour,id(sntp_time).now().minute,id(sntp_time).now().second);
+    on_time:
+      # Every 5 minutes
+      - hours: 0
+        then:
+          - switch.toggle: reboot
+
+switch:
+  - platform: restart
+    id: reboot
+    name: reboot
+  - platform: gpio
+    name: "Ventola"
+    pin: 5
