@@ -405,7 +405,7 @@ public class GitAnnexGUI extends JFrame {
         resetData();
         // TODO: check if it is a git-annex!
         // list of files
-        Command command=new Command(this,originComponent.getOrigin(),"git-annex list --allrepos"/*+originComponent.getOptions()*/);
+        Command command=new Command(this,originComponent.getOrigin(),"/usr/bin/git-annex list --allrepos"/*+originComponent.getOptions()*/);
         command.start(); // bloccante...
         //
         long starting=System.currentTimeMillis();
@@ -429,7 +429,7 @@ public class GitAnnexGUI extends JFrame {
         //
         //System.out.println(remotes.get(1).getPath());
         // metadata
-        command=new Command(this,originComponent.getOrigin(),"git-annex metadata "/*+originComponent.getOptions()*/);
+        command=new Command(this,originComponent.getOrigin(),"/usr/bin/git-annex metadata "/*+originComponent.getOptions()*/);
         command.start(); // bloccante...
         StringBuffer sb=new StringBuffer();
         int annexed=0;
@@ -816,6 +816,13 @@ class Command { /*extends Thread*/
             long starting=System.currentTimeMillis();
             String line="";
             BufferedReader stderr=new BufferedReader(new InputStreamReader(process.getErrorStream()));
+
+            while ((line = stderr.readLine()) != null) {
+                System.out.println("err... "+line);
+                //result.add(line);
+                //monit.setProgress(p++);
+            }
+
             //
             /*    NOTE:  one line of err message cause readline to stuck
             while ((line = stderr.readLine()) != null) {

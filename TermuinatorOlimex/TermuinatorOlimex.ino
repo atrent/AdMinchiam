@@ -366,6 +366,4 @@ void setup() {
     util_blinkLed(LEDPIN,10);
 
     Serial.println("Booted!");
-    Serial.println(PROVA);
-    cavolo();
 }
