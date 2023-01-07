@@ -27,7 +27,8 @@ debug:
 
 web_server:
 
-<<: !include ./secrets.yaml
+#<<: !include ./secrets.yaml
+<<: !include ./secrets-lab.yaml
 
 mqtt:
   broker: atrent.it
@@ -47,26 +48,35 @@ sensor:
   #   topic: sonoff/sensor/hlw8012_voltage/state
   #   unit_of_measurement: V
   - platform: uptime
-    name: up_time
+    name: "sys uptime"
   - platform: wifi_signal
-    name: "WiFi Signal Sensor"
+    name: "sys WiFi signal"
     update_interval: 5s
   - platform: debug
     free:
-      name: "Heap Free"
+      name: "sys Heap Free"
     fragmentation:
-      name: "Heap Fragmentation"
+      name: "sys Heap Fragmentation"
     block:
-      name: "Heap Max Block"
+      name: "sys Heap Max Block"
     loop_time:
-      name: "Loop Time"
+      name: "sys Loop Time"
   - platform: dht
-    pin: GPIO16
+    pin: GPIO4
     temperature:
-      name: "Living Room Temperature"
+      #id: temp
+      name: "Temperatura"
     humidity:
-      name: "Living Room Humidity"
+      #id: hum
+      name: "Umidità"
     update_interval: 5s
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: GPIO0
+      inverted: true
+    name: "Pulsante"
 
 time:
   - platform: sntp
@@ -94,7 +104,25 @@ time:
 switch:
   - platform: restart
     id: reboot
-    name: reboot
+    name: "sys reboot"
   - platform: gpio
+    id: ventola
     name: "Ventola"
-    pin: 5
+    pin: GPIO5
+
+# # Example single-point configuration entry (for cooling only)
+# climate:
+#   - platform: thermostat
+#     name: "Regolazione"
+#     sensor: Temperatura
+#     min_cooling_off_time: 60s
+#     min_cooling_run_time: 60s
+#     min_idle_time: 30s
+#     cool_action:
+#       - switch.turn_on: ventola
+#     idle_action:
+#       - switch.turn_off: ventola
+#     default_preset: Home
+#     preset:
+#       - name: Home
+#         default_target_temperature_high: 20 °C
