@@ -9,13 +9,10 @@ esphome:
   name: ${devicename}
   platform: esp8266
   board: modwifi
-  #
-  #name_add_mac_suffix: True
   project:
     name: "atrent.termuinator"
     version: "alpha"
 
-# Enable logging
 logger:
   #level: INFO
   level: DEBUG
@@ -23,7 +20,7 @@ logger:
   #level: VERY_VERBOSE
 
 debug:
-#  update_interval: 30s
+  update_interval: 30s
 
 web_server:
 
@@ -47,11 +44,15 @@ sensor:
   #   id: volt
   #   topic: sonoff/sensor/hlw8012_voltage/state
   #   unit_of_measurement: V
-  - platform: uptime
-    name: "sys uptime"
+
+  # causa non lettura DHT?!?!!?!?!?!?
+  # - platform: uptime
+  #   name: "sys uptime"
+
   - platform: wifi_signal
     name: "sys WiFi signal"
     update_interval: 5s
+
   - platform: debug
     free:
       name: "sys Heap Free"
@@ -61,13 +62,14 @@ sensor:
       name: "sys Heap Max Block"
     loop_time:
       name: "sys Loop Time"
+
   - platform: dht
     pin: GPIO4
     temperature:
-      #id: temp
+      id: temp
       name: "Temperatura"
     humidity:
-      #id: hum
+      id: hum
       name: "Umidità"
     update_interval: 5s
 
@@ -76,7 +78,7 @@ binary_sensor:
     pin:
       number: GPIO0
       inverted: true
-    name: "Pulsante"
+    name: "sys Pulsante"
 
 time:
   - platform: sntp
@@ -102,27 +104,31 @@ time:
           - switch.toggle: reboot
 
 switch:
+
   - platform: restart
     id: reboot
     name: "sys reboot"
+
   - platform: gpio
     id: ventola
     name: "Ventola"
     pin: GPIO5
 
-# # Example single-point configuration entry (for cooling only)
-# climate:
-#   - platform: thermostat
-#     name: "Regolazione"
-#     sensor: Temperatura
-#     min_cooling_off_time: 60s
-#     min_cooling_run_time: 60s
-#     min_idle_time: 30s
-#     cool_action:
-#       - switch.turn_on: ventola
-#     idle_action:
-#       - switch.turn_off: ventola
-#     default_preset: Home
-#     preset:
-#       - name: Home
-#         default_target_temperature_high: 20 °C
+# Example single-point configuration entry (for cooling only)
+climate:
+  - platform: thermostat
+    name: "Regolazione"
+    sensor: temp
+    min_cooling_off_time: 60s
+    min_cooling_run_time: 60s
+    min_idle_time: 60s
+    cool_action:
+      - switch.turn_on: ventola
+    idle_action:
+      - switch.turn_off: ventola
+    default_preset: Efficientamento
+    preset:
+      - name: Efficientamento
+        default_target_temperature_high: 20 °C
+        mode: "COOL"
+        #fan_mode: ON
