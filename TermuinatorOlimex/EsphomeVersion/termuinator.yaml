@@ -44,15 +44,14 @@ sensor:
   #   id: volt
   #   topic: sonoff/sensor/hlw8012_voltage/state
   #   unit_of_measurement: V
-
+  #
   # causa non lettura DHT?!?!!?!?!?!?
   # - platform: uptime
   #   name: "sys uptime"
-
+  #
   - platform: wifi_signal
     name: "sys WiFi signal"
     update_interval: 5s
-
   - platform: debug
     free:
       name: "sys Heap Free"
@@ -62,7 +61,6 @@ sensor:
       name: "sys Heap Max Block"
     loop_time:
       name: "sys Loop Time"
-
   - platform: dht
     pin: GPIO4
     temperature:
@@ -71,7 +69,7 @@ sensor:
     humidity:
       id: hum
       name: "Umidità"
-    update_interval: 5s
+    update_interval: 10s
 
 binary_sensor:
   - platform: gpio
@@ -98,17 +96,14 @@ time:
     #           id(oled_display).printf(10, 10, id(roboto), "ciao");
     #           //id(oled_display).printf(0, 0, id(roboto), "%d:%d:%d", id(sntp_time).now().hour,id(sntp_time).now().minute,id(sntp_time).now().second);
     on_time:
-      # Every 5 minutes
       - hours: 0
         then:
           - switch.toggle: reboot
 
 switch:
-
   - platform: restart
     id: reboot
     name: "sys reboot"
-
   - platform: gpio
     id: ventola
     name: "Ventola"
@@ -129,6 +124,5 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 20 °C
+        default_target_temperature_high: 21 °C
         mode: "COOL"
-        #fan_mode: ON
