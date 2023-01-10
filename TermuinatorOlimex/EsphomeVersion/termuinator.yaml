@@ -126,3 +126,7 @@ climate:
       - name: Efficientamento
         default_target_temperature_high: 21 °C
         mode: "COOL"
+    visual:
+      min_temperature: 10
+      max_temperature: 30
+      temperature_step: 0.5
