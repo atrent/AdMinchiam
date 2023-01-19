@@ -1,6 +1,8 @@
+##############################################################################
 # per flashare alimentare tenendo premuto bottone, poi ricordarsi di ribootare
-
+#
 # https://www.olimex.com/Products/IoT/ESP8266/ESP8266-EVB/open-source-hardware
+##############################################################################
 
 substitutions:
   devicename: termuinator-at
@@ -11,21 +13,19 @@ esphome:
   board: modwifi
   project:
     name: "atrent.termuinator"
-    version: "alpha"
+    version: "beta"
+
+#<<: !include ./secrets.yaml
+<<: !include ./secrets-lab.yaml
+
+web_server:
 
 logger:
   #level: INFO
   level: DEBUG
-  #level: VERBOSE
-  #level: VERY_VERBOSE
 
 debug:
-  update_interval: 30s
-
-web_server:
-
-#<<: !include ./secrets.yaml
-<<: !include ./secrets-lab.yaml
+  update_interval: 60s
 
 mqtt:
   broker: atrent.it
@@ -45,22 +45,15 @@ sensor:
   #   topic: sonoff/sensor/hlw8012_voltage/state
   #   unit_of_measurement: V
   #
+##############################################################################
   # causa non lettura DHT?!?!!?!?!?!?
   # - platform: uptime
   #   name: "sys uptime"
+##############################################################################
   #
   - platform: wifi_signal
     name: "sys WiFi signal"
-    update_interval: 5s
-  - platform: debug
-    free:
-      name: "sys Heap Free"
-    fragmentation:
-      name: "sys Heap Fragmentation"
-    block:
-      name: "sys Heap Max Block"
-    loop_time:
-      name: "sys Loop Time"
+    update_interval: 30s
   - platform: dht
     pin: GPIO4
     temperature:
@@ -70,6 +63,15 @@ sensor:
       id: hum
       name: "Umidità"
     update_interval: 10s
+  - platform: debug
+    free:
+      name: "sys Heap Free"
+    fragmentation:
+      name: "sys Heap Fragmentation"
+    block:
+      name: "sys Heap Max Block"
+    loop_time:
+      name: "sys Loop Time"
 
 binary_sensor:
   - platform: gpio
@@ -96,7 +98,7 @@ time:
     #           id(oled_display).printf(10, 10, id(roboto), "ciao");
     #           //id(oled_display).printf(0, 0, id(roboto), "%d:%d:%d", id(sntp_time).now().hour,id(sntp_time).now().minute,id(sntp_time).now().second);
     on_time:
-      - hours: 0
+      - minutes: 0
         then:
           - switch.toggle: reboot
 
@@ -124,9 +126,9 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 21 °C
+        default_target_temperature_high: 22 °C
         mode: "COOL"
     visual:
-      min_temperature: 10
-      max_temperature: 30
-      temperature_step: 0.5
+      min_temperature: 15
+      max_temperature: 35
+      temperature_step: 1
