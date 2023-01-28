@@ -7,7 +7,7 @@
 # provare syslog https://github.com/TheStaticTurtle/esphome_syslog
 
 substitutions:
-  devicename: termuinator-at
+  devicename: termuinator-mini
 
 esphome:
   name: ${devicename}
@@ -19,16 +19,16 @@ esphome:
   platformio_options:
     board_build.filesystem: littlefs
 
-#<<: !include ./secrets.yaml
-<<: !include ./secrets-lab.yaml
+<<: !include ./secrets.yaml
+#<<: !include ./secrets-lab.yaml
 
 web_server:
 
 logger:
-  level: INFO
-  #level: DEBUG
+  #level: INFO
+  level: DEBUG
 
-#debug:
+debug:
 #  update_interval: 60s
 
 mqtt:
