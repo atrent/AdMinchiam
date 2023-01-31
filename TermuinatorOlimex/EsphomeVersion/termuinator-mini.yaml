@@ -25,10 +25,10 @@ esphome:
 web_server:
 
 logger:
-  #level: INFO
-  level: DEBUG
+  level: INFO
+  #level: DEBUG
 
-debug:
+#debug:
 #  update_interval: 60s
 
 mqtt:
@@ -66,7 +66,7 @@ sensor:
     humidity:
       id: hum
       name: "Umidità"
-    update_interval: 10s
+    update_interval: 30s
   # - platform: debug
   #   free:
   #     name: "sys Heap Free"
@@ -77,12 +77,12 @@ sensor:
   #   loop_time:
   #     name: "sys Loop Time"
 
-binary_sensor:
-  - platform: gpio
-    pin:
-      number: GPIO0
-      inverted: true
-    name: "sys Pulsante"
+#binary_sensor:
+#  - platform: gpio
+#    pin:
+#      number: GPIO0
+#      inverted: true
+#    name: "sys Pulsante"
 
 time:
   - platform: sntp
@@ -122,6 +122,7 @@ climate:
   - platform: thermostat
     name: "Regolazione"
     sensor: temp
+    cool_deadband: 2°
     min_cooling_off_time: 60s
     min_cooling_run_time: 60s
     min_idle_time: 60s

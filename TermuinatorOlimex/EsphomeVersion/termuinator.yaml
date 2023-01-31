@@ -28,7 +28,7 @@ logger:
   level: INFO
   #level: DEBUG
 
-#debug:
+debug:
 #  update_interval: 60s
 
 mqtt:
@@ -66,7 +66,7 @@ sensor:
     humidity:
       id: hum
       name: "Umidità"
-    update_interval: 10s
+    update_interval: 30s
   # - platform: debug
   #   free:
   #     name: "sys Heap Free"
