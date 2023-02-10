@@ -136,5 +136,5 @@ climate:
         mode: "COOL"
     visual:
       min_temperature: 15
-      max_temperature: 35
+      max_temperature: 40
       temperature_step: 1

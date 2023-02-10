@@ -25,10 +25,10 @@ esphome:
 web_server:
 
 logger:
-  level: INFO
-  #level: DEBUG
+  #level: INFO
+  level: DEBUG
 
-#debug:
+debug:
 #  update_interval: 60s
 
 mqtt:
@@ -67,15 +67,15 @@ sensor:
       id: hum
       name: "Umidità"
     update_interval: 30s
-  # - platform: debug
-  #   free:
-  #     name: "sys Heap Free"
-  #   fragmentation:
-  #     name: "sys Heap Fragmentation"
-  #   block:
-  #     name: "sys Heap Max Block"
-  #   loop_time:
-  #     name: "sys Loop Time"
+  - platform: debug
+    free:
+      name: "sys Heap Free"
+    fragmentation:
+      name: "sys Heap Fragmentation"
+    block:
+      name: "sys Heap Max Block"
+    loop_time:
+      name: "sys Loop Time"
 
 #binary_sensor:
 #  - platform: gpio
@@ -133,9 +133,9 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 22 °C
+        default_target_temperature_high: 25 °C
         mode: "COOL"
     visual:
       min_temperature: 15
-      max_temperature: 35
+      max_temperature: 40
       temperature_step: 1
