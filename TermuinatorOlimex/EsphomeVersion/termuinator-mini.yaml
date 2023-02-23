@@ -133,7 +133,7 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 25 °C
+        default_target_temperature_high: 26 °C
         mode: "COOL"
     visual:
       min_temperature: 15

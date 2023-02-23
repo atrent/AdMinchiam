@@ -28,7 +28,7 @@ logger:
   level: INFO
   #level: DEBUG
 
-debug:
+#debug:
 #  update_interval: 60s
 
 mqtt:
@@ -106,20 +106,46 @@ time:
         seconds: 0
         hours: 13
         then:
-          - switch.toggle: reboot
+          - button.press: reboot
+      - minutes: 1
+        seconds: 1
+        hours: 1
+        days_of_month: 24
+        months: 2
+        then:
+          - lambda: |-
+              auto call = id(regolatore).make_call();
+              call.set_mode("COOL");
+              // etc. see API reference
+              call.perform();
+      # - minutes: 45
+      #   seconds: 30
+      #   hours: 15
+      #   #days_of_month: 24
+      #   #months: 2
+      #   then:
+      #     - lambda: |-
+      #         auto call = id(regolatore).make_call();
+      #         call.set_mode("OFF");
+      #         // etc. see API reference
+      #         call.perform();
+
 
 switch:
-  - platform: restart
-    id: reboot
-    name: "sys reboot"
   - platform: gpio
     id: ventola
     name: "Ventola"
     pin: GPIO5
 
+button:
+  - platform: restart
+    id: reboot
+    name: "sys reboot"
+
 # Example single-point configuration entry (for cooling only)
 climate:
   - platform: thermostat
+    id: regolatore
     name: "Regolazione"
     sensor: temp
     min_cooling_off_time: 60s
@@ -132,7 +158,7 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 22 °C
+        default_target_temperature_high: 25 °C
         mode: "COOL"
     visual:
       min_temperature: 15
