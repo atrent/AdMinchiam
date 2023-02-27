@@ -19,8 +19,8 @@ esphome:
   platformio_options:
     board_build.filesystem: littlefs
 
-#<<: !include ./secrets.yaml
-<<: !include ./secrets-lab.yaml
+<<: !include ./secrets.yaml
+#<<: !include ./secrets-lab.yaml
 
 web_server:
 
