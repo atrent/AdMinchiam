@@ -1,9 +1,22 @@
-# Termuinator
+\documentclass[a4paper,12pt]{article}
+
+%opening
+\title{Termuinator}
+\author{Andrea Trentini}
+\date{2023}
+
+\begin{document}
+
+\maketitle
+
+%\begin{abstract}
+%\end{abstract}
+
 
 "Efficientatore" (versione full), "fregatore" (versione mini) e misuratore consumo caloriferi
 
 
-## Inventario dell'esperimento "sparare ad un moscerino..."
+\section{Inventario dell'esperimento "sparare ad un moscerino..."}
 
 (foto!)
 
@@ -15,8 +28,8 @@
 + script stats.sh (stats generazione immagini, per aiutare nel tuning motion+flashing)
 
 + script ocr.sh (stats consumo Internet)
-    - digressione adb
-    - script screenshot.sh
+- digressione adb
+- script screenshot.sh
 
 + temp esterna (raspi + dht, logs su file)
 
@@ -29,7 +42,7 @@
 + consumo ventilatore circa 50W al max
 
 
-## Migliorie possibili
+\section{Migliorie possibili}
 
 - posizionare temperatura esterna a nord
 
@@ -50,3 +63,5 @@
 - lettura consumo fan (magari via sonoff)
 
 - si può scorporare le varie componenti: avere solo un termometro e solo una fan comandabile, che si parlano in MQTT, logica distribuita o centralizzata (HomeAssistant?)
+
+\end{document}
