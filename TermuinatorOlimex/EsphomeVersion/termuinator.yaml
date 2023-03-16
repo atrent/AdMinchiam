@@ -1,9 +1,7 @@
 ##############################################################################
 # per flashare alimentare tenendo premuto bottone, poi ricordarsi di ribootare
-#
 # https://www.olimex.com/Products/IoT/ESP8266/ESP8266-EVB/open-source-hardware
 ##############################################################################
-
 # provare syslog https://github.com/TheStaticTurtle/esphome_syslog
 
 substitutions:
