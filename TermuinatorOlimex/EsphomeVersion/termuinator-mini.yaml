@@ -1,8 +1,7 @@
-##############################################################################
-# per flashare alimentare tenendo premuto bottone, poi ricordarsi di ribootare
-#
+#####################################################################################################
+# per flashare (prima volta, poi OTA) alimentare tenendo premuto bottone, poi ricordarsi di ribootare
 # https://www.olimex.com/Products/IoT/ESP8266/ESP8266-EVB/open-source-hardware
-##############################################################################
+#####################################################################################################
 
 # provare syslog https://github.com/TheStaticTurtle/esphome_syslog
 
@@ -25,10 +24,10 @@ esphome:
 web_server:
 
 logger:
-  #level: INFO
-  level: DEBUG
+  level: INFO
+  #level: DEBUG
 
-debug:
+#debug:
 #  update_interval: 60s
 
 mqtt:
@@ -67,15 +66,15 @@ sensor:
       id: hum
       name: "Umidità"
     update_interval: 30s
-  - platform: debug
-    free:
-      name: "sys Heap Free"
-    fragmentation:
-      name: "sys Heap Fragmentation"
-    block:
-      name: "sys Heap Max Block"
-    loop_time:
-      name: "sys Loop Time"
+  # - platform: debug
+  #   free:
+  #     name: "sys Heap Free"
+  #   fragmentation:
+  #     name: "sys Heap Fragmentation"
+  #   block:
+  #     name: "sys Heap Max Block"
+  #   loop_time:
+  #     name: "sys Loop Time"
 
 #binary_sensor:
 #  - platform: gpio
@@ -135,7 +134,7 @@ climate:
     default_preset: Efficientamento
     preset:
       - name: Efficientamento
-        default_target_temperature_high: 27 °C
+        default_target_temperature_high: 22 °C
         mode: "COOL"
     visual:
       min_temperature: 15
